@@ -1,27 +1,33 @@
-anchor_version = "0.24.2"
-solana_version = "1.9.12"
+[toolchain]
+anchor_version = "0.29.0"
+solana_version = "1.16.9" # Solana version to use
 
 [features]
 seeds = true
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
+
+[workspace]
+members = [
+    "programs/merkle-distributor",
+]
 
 [provider]
-cluster = "localnet"
-wallet = "./tests/test-key.json"
+cluster = "testnet"
+wallet = "payxNNNpXxeZMuqCPoiDxCvPRKamjq3mzdiTxHZxUhq.json"
 
 [programs.mainnet]
-merkle_distributor = "MRKGLMizK9XSTaD1d1jbVkdHZbQVCSnPpYiTw9aKQv8"
+merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
 
 [programs.devnet]
-merkle_distributor = "MRKGLMizK9XSTaD1d1jbVkdHZbQVCSnPpYiTw9aKQv8"
+merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
 
 [programs.testnet]
-merkle_distributor = "MRKGLMizK9XSTaD1d1jbVkdHZbQVCSnPpYiTw9aKQv8"
+merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
 
 [programs.localnet]
-merkle_distributor = "MRKGLMizK9XSTaD1d1jbVkdHZbQVCSnPpYiTw9aKQv8"
+merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
 
 [scripts]
 test = "yarn mocha"

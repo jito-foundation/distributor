@@ -1,16 +1,11 @@
 [package]
 name = "merkle-distributor"
-version = "0.3.5"
+version = { workspace = true }
 description = "A Solana program for distributing tokens according to a Merkle root."
-edition = "2021"
-homepage = "https://saber.so"
-repository = "https://github.com/saber-hq/merkle-distributor"
-authors = [
-    "Michael Huang <michaelhly@gmail.com>",
-    "Ian Macalinao <ian@ship.capital>"
-]
+edition = { workspace = true }
+repository = "https://github.com/jito-foundation/governance"
+authors = ["Jito Foundation <team@jito.network>"]
 license = "GPL-3.0"
-keywords = ["solana", "airdrop", "token", "saber"]
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -24,6 +19,9 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = ">=0.22, <=0.24"
-anchor-spl = ">=0.22, <=0.24"
-vipers = { version = "^2", features = ["spl-associated-token-account"] }
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+bytemuck = { workspace = true }
+jito-merkle-verify = { path = "../../verify" }
+solana-program = { workspace = true }
+solana-security-txt = { workspace = true }

@@ -1,0 +1,15 @@
+[package]
+name = "jito-scripts"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+clap = { workspace = true }
+jito-merkle-tree = { path = "../merkle-tree" }
+merkle-distributor = { path = "../programs/merkle-distributor" }
+solana-program = { workspace = true }
+solana-rpc-client = { workspace = true }
+solana-sdk = { workspace = true }
+spl-associated-token-account = { workspace = true }

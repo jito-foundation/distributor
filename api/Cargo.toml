@@ -1,0 +1,26 @@
+[package]
+name = "jito-airdrop-api"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+anchor-lang = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true }
+http = { workspace = true }
+jito-merkle-tree = { path = "../merkle-tree" }
+merkle-distributor = { path = "../programs/merkle-distributor" }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+solana-program = { workspace = true }
+solana-rpc-client = { workspace = true }
+solana-rpc-client-api = { workspace = true }
+spl-associated-token-account = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-core = { workspace = true }
+tracing-subscriber = { workspace = true }

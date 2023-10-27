@@ -1,0 +1,4 @@
+pubkey,amount_unlocked,amount_locked,category
+4SX6nqv5VRLMoNfYM5phvHgcBNcBEwUEES4qPPjf1EqS,1000,500,Staker
+8G9xE8awr9vA2PZWFTJSHNhS16KLnXYdV6XEaJP1a2Yx,2000,1000,Validator
+A4mDtfFCkdt9CqGzEkfiSHhJD8d3bUMasVzwajudGtb2,1500,750,Searcher

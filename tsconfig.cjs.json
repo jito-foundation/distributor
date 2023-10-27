@@ -1,7 +1,0 @@
-{
-  "extends": "@saberhq/tsconfig/tsconfig.cjs.json",
-  "compilerOptions": {
-    "outDir": "dist/cjs/"
-  },
-  "include": ["src/"]
-}

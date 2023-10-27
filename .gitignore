@@ -1,3 +1,4 @@
+.idea/
 
 .anchor
 .DS_Store
@@ -113,6 +114,14 @@ dist
 
 # DynamoDB Local files
 .dynamodb/
+
+# Python
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.ipynb_checkpoints
 
 # TernJS port file
 .tern-port
