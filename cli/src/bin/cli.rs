@@ -66,9 +66,6 @@ pub enum Commands {
 // NewClaim and Claim subcommand args
 #[derive(Parser, Debug)]
 pub struct ClaimArgs {
-    /// Claimant pubkey
-    #[clap(long, env)]
-    pub claimant: Pubkey,
     /// Merkle distributor path
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
@@ -143,6 +140,8 @@ fn main() {
 
 fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let claimant = keypair.pubkey();
+    println!("Claiming tokens for user {}...", claimant);
 
     let merkle_tree = AirdropMerkleTree::new_from_file(&claim_args.merkle_tree_path)
         .expect("failed to load merkle tree from file");
@@ -151,14 +150,13 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
         get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
 
     // Get user's node in claim
-    let node = merkle_tree.get_node(&claim_args.claimant);
+    let node = merkle_tree.get_node(&claimant);
 
-    let (claim_status_pda, _bump) =
-        get_claim_status_pda(&args.program_id, &claim_args.claimant, &distributor);
+    let (claim_status_pda, _bump) = get_claim_status_pda(&args.program_id, &claimant, &distributor);
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let claimant_ata = get_associated_token_address(&claim_args.claimant, &args.mint);
+    let claimant_ata = get_associated_token_address(&claimant, &args.mint);
 
     let mut ixs = vec![];
 
@@ -168,12 +166,8 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
             // TODO: directly pattern match on error kind
             if e.to_string().contains("AccountNotFound") {
                 println!("PDA does not exist. creating.");
-                let ix = create_associated_token_account(
-                    &claim_args.claimant,
-                    &claim_args.claimant,
-                    &args.mint,
-                    &token::ID,
-                );
+                let ix =
+                    create_associated_token_account(&claimant, &claimant, &args.mint, &token::ID);
                 ixs.push(ix);
             } else {
                 panic!("Error fetching PDA: {e}")
@@ -188,7 +182,7 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
             claim_status: claim_status_pda,
             from: get_associated_token_address(&distributor, &args.mint),
             to: claimant_ata,
-            claimant: claim_args.claimant,
+            claimant,
             token_program: token::ID,
             system_program: solana_program::system_program::ID,
         }
@@ -204,12 +198,8 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
     ixs.push(new_claim_ix);
 
     let blockhash = client.get_latest_blockhash().unwrap();
-    let tx = Transaction::new_signed_with_payer(
-        &ixs,
-        Some(&claim_args.claimant.key()),
-        &[&keypair],
-        blockhash,
-    );
+    let tx =
+        Transaction::new_signed_with_payer(&ixs, Some(&claimant.key()), &[&keypair], blockhash);
 
     let signature = client
         .send_and_confirm_transaction_with_spinner(&tx)
@@ -219,13 +209,13 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
 
 fn process_claim(args: &Args, claim_args: &ClaimArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let claimant = keypair.pubkey();
 
     let (distributor, bump) =
         get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
     println!("distributor pubkey {}", distributor);
 
-    let (claim_status_pda, _bump) =
-        get_claim_status_pda(&args.program_id, &claim_args.claimant, &distributor);
+    let (claim_status_pda, _bump) = get_claim_status_pda(&args.program_id, &claimant, &distributor);
     println!("claim pda: {claim_status_pda}, bump: {bump}");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
@@ -243,7 +233,7 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
         }
     }
 
-    let claimant_ata = get_associated_token_address(&claim_args.claimant, &args.mint);
+    let claimant_ata = get_associated_token_address(&claimant, &args.mint);
 
     let claim_ix = Instruction {
         program_id: args.program_id,
@@ -252,7 +242,7 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
             claim_status: claim_status_pda,
             from: get_associated_token_address(&distributor, &args.mint),
             to: claimant_ata,
-            claimant: claim_args.claimant,
+            claimant,
             token_program: token::ID,
         }
         .to_account_metas(None),
@@ -262,7 +252,7 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
     let blockhash = client.get_latest_blockhash().unwrap();
     let tx = Transaction::new_signed_with_payer(
         &[claim_ix],
-        Some(&claim_args.claimant.key()),
+        Some(&claimant.key()),
         &[&keypair],
         blockhash,
     );
@@ -310,7 +300,7 @@ fn check_distributor_onchain_matches(
 }
 
 fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArgs) {
-    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
 
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
     let merkle_tree = AirdropMerkleTree::new_from_file(&new_distributor_args.merkle_tree_path)
@@ -371,13 +361,10 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
     // See comments on new_distributor instruction inside the program to ensure this transaction
     // didn't get frontrun.
     // If this fails, make sure to run it again.
-    match client.send_and_confirm_transaction_with_spinner_and_commitment(
-        &tx,
-        CommitmentConfig::confirmed(),
-    ) {
+    match client.send_and_confirm_transaction_with_spinner(&tx) {
         Ok(_) => {}
         Err(e) => {
-            println!("Failed to create MerkleDistributor: {}", e);
+            println!("Failed to create MerkleDistributor: {:?}", e);
 
             // double check someone didn't frontrun this transaction with a malicious merkle root
             if let Some(account) = client
