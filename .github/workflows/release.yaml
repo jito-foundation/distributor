@@ -9,7 +9,7 @@ env:
 jobs:
   release:
     name: Create the jito programs release
-    runs-on: big-runner-1
+    runs-on: ubuntu-20.04-32c-128g
 
     steps:
       # Setup
