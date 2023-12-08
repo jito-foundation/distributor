@@ -56,9 +56,9 @@ impl Debug for RouterState {
 #[instrument]
 pub fn get_routes(state: Arc<RouterState>, enable_proof_endpoint: bool) -> Router {
     let middleware = ServiceBuilder::new()
-        .layer(HandleErrorLayer::new(error::handle_error)) // handle middleware errors explicitly!
-        .layer(BufferLayer::new(100)) // buffer up to 100 requests in queue
-        .layer(RateLimitLayer::new(1000, Duration::from_secs(10)))
+        .layer(HandleErrorLayer::new(error::handle_error))
+        .layer(BufferLayer::new(1000))
+        .layer(RateLimitLayer::new(10000, Duration::from_secs(1)))
         .layer(TimeoutLayer::new(Duration::from_secs(20)))
         .layer(LoadShedLayer::new())
         .layer(

@@ -3,7 +3,7 @@ version: "3.9"
 services:
   # API service to serve points requests
   jito-airdrop-api:
-    image: jito-airdrop-api
+    image: jitolabs/jito-airdrop-api:${BUILD_TAG}
     build:
       context: .
       dockerfile: Dockerfile
