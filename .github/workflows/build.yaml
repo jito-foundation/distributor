@@ -11,7 +11,7 @@ env:
 jobs:
   build-and-test:
     name: Build and test programs
-    runs-on: ubuntu-20.04-32c-128g
+    runs-on: big-runner-1
 
     steps:
       # Setup
@@ -75,7 +75,7 @@ jobs:
 
   verified-build:
     name: Build Verifiable Artifact
-    runs-on: ubuntu-20.04-32c-128g
+    runs-on: big-runner-1
     steps:
       - uses: actions/checkout@v3
         with:
@@ -100,7 +100,7 @@ jobs:
 
   docker:
     name: Build and push docker container
-    runs-on: ubuntu-20.04-32c-128g
+    runs-on: big-runner-1
     steps:
       # Required for docker cache export
       - name: Set up Docker Buildx
