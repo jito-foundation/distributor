@@ -1,11 +1,15 @@
 extern crate jito_merkle_tree;
 extern crate merkle_distributor;
+use std::{error::Error, ops::Deref, path::PathBuf, rc::Rc, str::FromStr};
 
-use std::path::PathBuf;
-
+use anchor_client::{
+    solana_sdk::signer::keypair::read_keypair_file, Client as AnchorClient, Cluster, Program,
+};
 use anchor_lang::{prelude::Pubkey, AccountDeserialize, InstructionData, Key, ToAccountMetas};
-use anchor_spl::token;
+use anchor_spl::token::{self, TokenAccount};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
+use csv::Writer;
 use jito_merkle_tree::{
     airdrop_merkle_tree::AirdropMerkleTree,
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
@@ -14,13 +18,15 @@ use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::instruction::Instruction;
 use solana_rpc_client::rpc_client::RpcClient;
 use solana_sdk::{
-    account::Account, commitment_config::CommitmentConfig, signature::read_keypair_file,
-    signer::Signer, transaction::Transaction,
+    account::Account,
+    commitment_config::CommitmentConfig,
+    // signature::read_keypair_file,
+    signer::{keypair::Keypair, Signer},
+    transaction::Transaction,
 };
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
-
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
@@ -32,11 +38,11 @@ pub struct Args {
     pub airdrop_version: u64,
 
     /// SPL Mint address
-    #[clap(long, env)]
+    #[clap(long, env, default_value_t = Pubkey::default())]
     pub mint: Pubkey,
 
     /// RPC url
-    #[clap(long, env)]
+    #[clap(long, env, default_value = "http://localhost:8899")]
     pub rpc_url: String,
 
     /// Program id
@@ -44,8 +50,23 @@ pub struct Args {
     pub program_id: Pubkey,
 
     /// Payer keypair
-    #[clap(long, env)]
-    pub keypair_path: PathBuf,
+    #[clap(long, env, default_value = "~/.config/solana/id.json")]
+    pub keypair_path: String,
+}
+
+impl Args {
+    fn get_program_client(&self) -> Program<Rc<Keypair>> {
+        let payer =
+            read_keypair_file(self.keypair_path.clone()).expect("Wallet keypair file not found");
+        let client = AnchorClient::new_with_options(
+            Cluster::Custom(self.rpc_url.clone(), self.rpc_url.clone()),
+            Rc::new(Keypair::from_bytes(&payer.to_bytes()).unwrap()),
+            CommitmentConfig::finalized(),
+        );
+        let program: anchor_client::Program<Rc<Keypair>> =
+            client.program(merkle_distributor::id()).unwrap();
+        program
+    }
 }
 
 // Subcommands
@@ -61,6 +82,12 @@ pub enum Commands {
     /// Create a Merkle tree, given a CSV of recipients
     CreateMerkleTree(CreateMerkleTreeArgs),
     SetAdmin(SetAdminArgs),
+
+    EnablePool(UpdatePoolStatusArgs),
+    DisablePool(UpdatePoolStatusArgs),
+
+    CreateTestList(CreateTestListArgs),
+    CreateCsv(CreateDummyCsv),
 }
 
 // NewClaim and Claim subcommand args
@@ -75,8 +102,8 @@ pub struct ClaimArgs {
 #[derive(Parser, Debug)]
 pub struct NewDistributorArgs {
     /// Clawback receiver token account
-    #[clap(long, env)]
-    pub clawback_receiver_token_account: Pubkey,
+    // #[clap(long, env)]
+    // pub clawback_receiver_token_account: Pubkey,
 
     /// Lockup timestamp start
     #[clap(long, env)]
@@ -118,6 +145,27 @@ pub struct SetAdminArgs {
     pub new_admin: Pubkey,
 }
 
+#[derive(Parser, Debug)]
+pub struct UpdatePoolStatusArgs {}
+
+#[derive(Parser, Debug)]
+pub struct CreateTestListArgs {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
+
+    /// Merkle tree out path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+}
+
+#[derive(Parser, Debug)]
+pub struct CreateDummyCsv {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: String,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -134,6 +182,18 @@ fn main() {
         }
         Commands::SetAdmin(set_admin_args) => {
             process_set_admin(&args, set_admin_args);
+        }
+        Commands::EnablePool(_args) => {
+            process_enable_pool(&args);
+        }
+        Commands::DisablePool(_args) => {
+            process_enable_pool(&args);
+        }
+        Commands::CreateCsv(test_args) => {
+            process_create_dummy_csv(test_args);
+        }
+        Commands::CreateTestList(create_test_list_args) => {
+            process_create_test_list(&args, create_test_list_args);
         }
     }
 }
@@ -268,6 +328,7 @@ fn check_distributor_onchain_matches(
     merkle_tree: &AirdropMerkleTree,
     new_distributor_args: &NewDistributorArgs,
     pubkey: Pubkey,
+    args: &Args,
 ) -> Result<(), &'static str> {
     if let Ok(distributor) = MerkleDistributor::try_deserialize(&mut account.data.as_slice()) {
         if distributor.root != merkle_tree.merkle_root {
@@ -289,7 +350,14 @@ fn check_distributor_onchain_matches(
         if distributor.clawback_start_ts != new_distributor_args.clawback_start_ts {
             return Err("clawback_start_ts mismatch");
         }
-        if distributor.clawback_receiver != new_distributor_args.clawback_receiver_token_account {
+
+        // TODO fix code
+
+        let program = args.get_program_client();
+        let clawback_receiver_token_account: TokenAccount =
+            program.account(distributor.clawback_receiver).unwrap();
+
+        if clawback_receiver_token_account.owner != distributor.admin {
             return Err("clawback_receiver mismatch");
         }
         if distributor.admin != pubkey {
@@ -301,7 +369,7 @@ fn check_distributor_onchain_matches(
 
 fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArgs) {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
-
+    // println!("{}", &args.keypair_path);
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
     let merkle_tree = AirdropMerkleTree::new_from_file(&new_distributor_args.merkle_tree_path)
         .expect("failed to read");
@@ -320,15 +388,19 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
             &merkle_tree,
             new_distributor_args,
             keypair.pubkey(),
+            &args,
         ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
     }
 
     println!("creating new distributor with args: {new_distributor_args:#?}");
 
+    let program = args.get_program_client();
+    let clawback_receiver = get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
+
     let new_distributor_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::NewDistributor {
-            clawback_receiver: new_distributor_args.clawback_receiver_token_account,
+            clawback_receiver,
             mint: args.mint,
             token_vault,
             distributor: distributor_pubkey,
@@ -377,6 +449,7 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
                     &merkle_tree,
                     new_distributor_args,
                     keypair.pubkey(),
+                    args,
                 ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
             }
         }
@@ -462,4 +535,154 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
         .unwrap();
 
     println!("Successfully set admin! signature: {signature:#?}");
+}
+
+fn process_enable_pool(args: &Args) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+
+    let (distributor, _bump) =
+        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+
+    let set_admin_ix = Instruction {
+        program_id: args.program_id,
+        accounts: merkle_distributor::accounts::UpdatePoolStatus {
+            distributor,
+            admin: keypair.pubkey(),
+        }
+        .to_account_metas(None),
+        data: merkle_distributor::instruction::EnablePool {}.data(),
+    };
+
+    let tx = Transaction::new_signed_with_payer(
+        &[set_admin_ix],
+        Some(&keypair.pubkey()),
+        &[&keypair],
+        client.get_latest_blockhash().unwrap(),
+    );
+
+    let signature = client
+        .send_and_confirm_transaction_with_spinner(&tx)
+        .unwrap();
+
+    println!("Successfully enable pool! signature: {signature:#?}");
+}
+
+fn process_disable_pool(args: &Args) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+
+    let (distributor, _bump) =
+        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+
+    let set_admin_ix = Instruction {
+        program_id: args.program_id,
+        accounts: merkle_distributor::accounts::UpdatePoolStatus {
+            distributor,
+            admin: keypair.pubkey(),
+        }
+        .to_account_metas(None),
+        data: merkle_distributor::instruction::DisablePool {}.data(),
+    };
+
+    let tx = Transaction::new_signed_with_payer(
+        &[set_admin_ix],
+        Some(&keypair.pubkey()),
+        &[&keypair],
+        client.get_latest_blockhash().unwrap(),
+    );
+
+    let signature = client
+        .send_and_confirm_transaction_with_spinner(&tx)
+        .unwrap();
+
+    println!("Successfully disable pool! signature: {signature:#?}");
+}
+
+fn process_create_dummy_csv(args: &CreateDummyCsv) {
+    let mut wtr = Writer::from_path(&args.csv_path).unwrap();
+
+    wtr.write_record(&["pubkey", "amount_unlocked", "amount_locked", "category"])
+        .unwrap();
+
+    // add my key
+    wtr.write_record(&[
+        "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",
+        "10000",
+        "0",
+        "Searcher",
+    ])
+    .unwrap();
+    for _i in 0..100000 {
+        wtr.write_record(&[&Pubkey::new_unique().to_string(), "1000", "0", "Searcher"])
+            .unwrap();
+    }
+
+    wtr.flush().unwrap();
+}
+
+fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListArgs) {
+    let pre_list = vec![
+        "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",
+        "BULRqL3U2jPgwvz6HYCyBVq9BMtK94Y1Nz98KQop23aD",
+        "7w32LzRsJrQiE7S3ZSdkz9TSFGey1XNsonPmdm9xDUch",
+        "55pPhcCcp8gEKvKWr1JUkAcdwMeemmNhTHmkWNR9sJib",
+        "62ucxc2gd5TBCwzToEEWVV4M5drVK7Fi7aYozniqWtac",
+        "5unTfT2kssBuNvHPY6LbJfJpLqEcdMxGYLWHwShaeTLi",
+        "9zg3seAh4Er1Nz8GAuiciH437apxtzgUWBT8frhudevR",
+        "AjefJWRfjRCVNSQ1pHnTW8F7szLV7xFZftiB3yM5vnTa",
+        "8SEFruHjgNrnV8ak2Ff11wg9em8Nh72RWTwk359bRyzE",
+        "7jBypy9HX1dyLHPnmRnRubibNUaBPrShnERGnoE7rc3C",
+        "XWpxVfYTeKmmp18DPxqPvWFL7P1C2vbdegDPAbXkV1n",
+        "AuTFdqo4GsxpDgtag87pDaHE259cE94Z82kdpFozVBhC",
+        "6h43GsVT3TjtLa5nRpsXp15GDpAY4smWCYHgcq58dSPM",
+        "2mAax9cNqDXDg9eDJDby1tBh9Q8N3TS7qLhX9rMp8EVc",
+        "JBeYA7dmBGCNgaEdtqdoUnESwKJho5YvgXVNLgo4n3MM",
+        "HeTpE5BnNinzNv92MzVAGyVT5LjAwTWuk5qQcPURmi2L",
+        "Bidku3jkJUxiTzBJZroEfwPcUWueNUst9LrMbZQLhrtG",
+        "HUQytvb7WCCqbHnpQrVgXhmXSw4XfWMnmqCiKz6T1vsU",
+        "4zvTjdpyr3SAgLeSpCnq4KaHvX2j5SbkwxYydzbfqhRQ",
+        "EVfUfs9XNwJmfNvoazDbZVb6ecnGCxgQrJzsCQHoQ4q7",
+    ];
+    let mut wtr = Writer::from_path(&create_test_list_args.csv_path).unwrap();
+    wtr.write_record(&["pubkey", "amount_unlocked", "amount_locked", "category"])
+        .unwrap();
+
+    for &addr in pre_list.iter() {
+        wtr.write_record(&[addr, "6000", "0", "Searcher"]).unwrap();
+    }
+    wtr.flush().unwrap();
+
+    let merkle_tree_args = &CreateMerkleTreeArgs {
+        csv_path: create_test_list_args.csv_path.clone(),
+        merkle_tree_path: create_test_list_args.merkle_tree_path.clone(),
+    };
+    process_create_merkle_tree(merkle_tree_args);
+}
+
+fn get_or_create_ata<C: Deref<Target = impl Signer> + Clone>(
+    program_client: &anchor_client::Program<C>,
+    token_mint: Pubkey,
+    user: Pubkey,
+) -> Result<Pubkey> {
+    let user_token_account =
+        spl_associated_token_account::get_associated_token_address(&user, &token_mint);
+    let rpc_client = program_client.rpc();
+    if rpc_client.get_account_data(&user_token_account).is_err() {
+        println!("Create ATA for TOKEN {} \n", &token_mint);
+
+        let builder = program_client.request().instruction(
+            spl_associated_token_account::create_associated_token_account(
+                &program_client.payer(),
+                &user,
+                &token_mint,
+            ),
+        );
+
+        let signature = builder.send()?;
+        println!("{}", signature);
+    }
+    Ok(user_token_account)
 }

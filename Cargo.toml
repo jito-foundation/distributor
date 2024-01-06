@@ -29,6 +29,7 @@ publish = false
 [workspace.dependencies]
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
+anchor-client = "0.28.0"
 axum = "0.6.2"
 bytemuck = "1.14.0"
 clap = { version = "3.2.25", features = ["derive", "env"] }

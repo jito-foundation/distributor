@@ -30,7 +30,7 @@ security_txt! {
     source_code: "https://github.com/jito-foundation/distributor"
 }
 
-declare_id!("mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv");
+declare_id!("meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb");
 
 #[program]
 pub mod merkle_distributor {
@@ -75,6 +75,16 @@ pub mod merkle_distributor {
             end_vesting_ts,
             clawback_start_ts,
         )
+    }
+
+    #[allow(clippy::result_large_err)]
+    pub fn enable_pool(ctx: Context<UpdatePoolStatus>) -> Result<()> {
+        handle_enable(ctx)
+    }
+
+    #[allow(clippy::result_large_err)]
+    pub fn disable_pool(ctx: Context<UpdatePoolStatus>) -> Result<()> {
+        handle_disable(ctx)
     }
 
     #[allow(clippy::result_large_err)]

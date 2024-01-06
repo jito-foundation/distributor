@@ -71,6 +71,8 @@ pub fn handle_claim_locked(ctx: Context<ClaimLocked>) -> Result<()> {
 
     require!(!distributor.clawed_back, ErrorCode::ClaimExpired);
 
+    require!(distributor.is_enable, ErrorCode::PoolIsDisable);
+
     let amount =
         claim_status.amount_withdrawable(curr_ts, distributor.start_ts, distributor.end_ts)?;
 

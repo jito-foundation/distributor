@@ -1,6 +1,6 @@
-[toolchain]
-anchor_version = "0.29.0"
-solana_version = "1.16.9" # Solana version to use
+# [toolchain]
+# anchor_version = "0.29.0"
+# solana_version = "1.16.9" # Solana version to use
 
 [features]
 seeds = true
@@ -14,20 +14,20 @@ members = [
 ]
 
 [provider]
-cluster = "testnet"
-wallet = "payxNNNpXxeZMuqCPoiDxCvPRKamjq3mzdiTxHZxUhq.json"
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
 
 [programs.mainnet]
-merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
+merkle_distributor = "meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb"
 
 [programs.devnet]
-merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
+merkle_distributor = "meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb"
 
 [programs.testnet]
-merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
+merkle_distributor = "meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb"
 
 [programs.localnet]
-merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"
+merkle_distributor = "meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb"
 
 [scripts]
 test = "yarn mocha"

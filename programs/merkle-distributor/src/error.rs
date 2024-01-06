@@ -39,4 +39,6 @@ pub enum ErrorCode {
     TimestampsNotInFuture,
     #[msg("Airdrop Version Mismatch")]
     InvalidVersion,
+    #[msg("Pool is disable")]
+    PoolIsDisable,
 }

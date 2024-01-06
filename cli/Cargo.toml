@@ -6,6 +6,7 @@ edition = { workspace = true }
 [dependencies]
 anchor-lang = { workspace = true }
 anchor-spl = { workspace = true }
+anchor-client = { workspace = true }
 clap = { workspace = true }
 jito-merkle-tree = { path = "../merkle-tree" }
 merkle-distributor = { path = "../programs/merkle-distributor" }
@@ -13,3 +14,5 @@ solana-program = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-sdk = { workspace = true }
 spl-associated-token-account = { workspace = true }
+csv="1.3.0"
+anyhow = "1.0.57"

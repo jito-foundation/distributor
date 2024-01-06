@@ -1,8 +1,8 @@
 [package]
 name = "merkle-distributor"
-version = { workspace = true }
+version = "0.0.1"
 description = "A Solana program for distributing tokens according to a Merkle root."
-edition = { workspace = true }
+edition = "2021"
 repository = "https://github.com/jito-foundation/governance"
 authors = ["Jito Foundation <team@jito.network>"]
 license = "GPL-3.0"
@@ -19,9 +19,9 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { workspace = true }
-anchor-spl = { workspace = true }
-bytemuck = { workspace = true }
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+bytemuck = "1.14.0"
 jito-merkle-verify = { path = "../../verify" }
-solana-program = { workspace = true }
-solana-security-txt = { workspace = true }
+solana-program = "1.16.16"
+solana-security-txt = "1.1.1"

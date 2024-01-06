@@ -2,7 +2,8 @@
 
 .anchor
 .DS_Store
-target
+target/*
+!target/types
 **/*.rs.bk
 
 # Created by https://www.toptal.com/developers/gitignore/api/node

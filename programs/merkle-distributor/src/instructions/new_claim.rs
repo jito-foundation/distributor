@@ -91,6 +91,7 @@ pub fn handle_new_claim(
 
     let curr_ts = Clock::get()?.unix_timestamp;
     require!(!distributor.clawed_back, ErrorCode::ClaimExpired);
+    require!(distributor.is_enable, ErrorCode::PoolIsDisable);
 
     distributor.num_nodes_claimed = distributor
         .num_nodes_claimed

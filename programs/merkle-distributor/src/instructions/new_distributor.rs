@@ -122,6 +122,7 @@ pub fn handle_new_distributor(
     distributor.clawback_receiver = ctx.accounts.clawback_receiver.key();
     distributor.admin = ctx.accounts.admin.key();
     distributor.clawed_back = false;
+    distributor.is_enable = false;
 
     // Note: might get truncated, do not rely on
     msg! {
