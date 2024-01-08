@@ -645,6 +645,7 @@ fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListA
         "HUQytvb7WCCqbHnpQrVgXhmXSw4XfWMnmqCiKz6T1vsU",
         "4zvTjdpyr3SAgLeSpCnq4KaHvX2j5SbkwxYydzbfqhRQ",
         "EVfUfs9XNwJmfNvoazDbZVb6ecnGCxgQrJzsCQHoQ4q7",
+        "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
     ];
     let mut wtr = Writer::from_path(&create_test_list_args.csv_path).unwrap();
     wtr.write_record(&["pubkey", "amount_unlocked", "amount_locked", "category"])
