@@ -69,12 +69,6 @@ mod tests {
             claimant,
             amount,
             proof: None,
-            // total_unlocked_staker,
-            // total_locked_staker,
-            // total_unlocked_searcher,
-            // total_locked_searcher,
-            // total_unlocked_validator,
-            // total_locked_validator,
         }
     }
 

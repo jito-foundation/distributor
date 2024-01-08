@@ -1,6 +1,11 @@
 extern crate jito_merkle_tree;
 extern crate merkle_distributor;
-use std::{error::Error, ops::Deref, path::PathBuf, rc::Rc, str::FromStr};
+use std::{
+    fs,
+    ops::Deref,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use anchor_client::{
     solana_sdk::signer::keypair::read_keypair_file, Client as AnchorClient, Cluster, Program,
@@ -17,11 +22,10 @@ use jito_merkle_tree::{
 };
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::instruction::Instruction;
-use solana_rpc_client::rpc_client::RpcClient;
+use solana_rpc_client::rpc_client::{RpcClient, SerializableTransaction};
 use solana_sdk::{
     account::Account,
     commitment_config::CommitmentConfig,
-    // signature::read_keypair_file,
     signer::{keypair::Keypair, Signer},
     transaction::Transaction,
 };
@@ -33,10 +37,6 @@ use spl_associated_token_account::{
 pub struct Args {
     #[clap(subcommand)]
     pub command: Commands,
-
-    /// Airdrop version
-    #[clap(long, env, default_value_t = 0)]
-    pub airdrop_version: u64,
 
     /// SPL Mint address
     #[clap(long, env, default_value_t = Pubkey::default())]
@@ -102,10 +102,6 @@ pub struct ClaimArgs {
 // NewDistributor subcommand args
 #[derive(Parser, Debug)]
 pub struct NewDistributorArgs {
-    /// Clawback receiver token account
-    // #[clap(long, env)]
-    // pub clawback_receiver_token_account: Pubkey,
-
     /// Lockup timestamp start
     #[clap(long, env)]
     pub start_vesting_ts: i64,
@@ -127,6 +123,8 @@ pub struct NewDistributorArgs {
 pub struct ClawbackArgs {
     #[clap(long, env)]
     pub clawback_keypair_path: PathBuf,
+    #[clap(long, env)]
+    pub airdrop_version: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -148,10 +146,15 @@ pub struct CreateMerkleTreeArgs {
 pub struct SetAdminArgs {
     #[clap(long, env)]
     pub new_admin: Pubkey,
+    #[clap(long, env)]
+    pub airdrop_version: u64,
 }
 
 #[derive(Parser, Debug)]
-pub struct UpdatePoolStatusArgs {}
+pub struct UpdatePoolStatusArgs {
+    #[clap(long, env)]
+    pub airdrop_version: u64,
+}
 
 #[derive(Parser, Debug)]
 pub struct CreateTestListArgs {
@@ -169,6 +172,10 @@ pub struct CreateDummyCsv {
     /// CSV path
     #[clap(long, env)]
     pub csv_path: String,
+    #[clap(long, env)]
+    pub num_records: u64,
+    #[clap(long, env)]
+    pub amount: u64,
 }
 
 fn main() {
@@ -188,11 +195,12 @@ fn main() {
         Commands::SetAdmin(set_admin_args) => {
             process_set_admin(&args, set_admin_args);
         }
-        Commands::EnablePool(_args) => {
-            process_enable_pool(&args);
+        Commands::EnablePool(update_pool_args) => {
+            process_enable_pool(&args, update_pool_args);
         }
-        Commands::DisablePool(_args) => {
-            process_disable_pool(&args);
+
+        Commands::DisablePool(update_pool_args) => {
+            process_enable_pool(&args, update_pool_args);
         }
         Commands::CreateDummyCsv(test_args) => {
             process_create_dummy_csv(test_args);
@@ -212,7 +220,7 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
         .expect("failed to load merkle tree from file");
 
     let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+        get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
 
     // Get user's node in claim
     let node = merkle_tree.get_node(&claimant);
@@ -276,8 +284,11 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
     let claimant = keypair.pubkey();
 
+    let merkle_tree = AirdropMerkleTree::new_from_file(&claim_args.merkle_tree_path)
+        .expect("failed to load merkle tree from file");
+
     let (distributor, bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+        get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
     println!("distributor pubkey {}", distributor);
 
     let (claim_status_pda, _bump) = get_claim_status_pda(&args.program_id, &claimant, &distributor);
@@ -376,86 +387,106 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
     // println!("{}", &args.keypair_path);
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
-    let merkle_tree = AirdropMerkleTree::new_from_file(&new_distributor_args.merkle_tree_path)
-        .expect("failed to read");
-    let (distributor_pubkey, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
-    let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
-
-    if let Some(account) = client
-        .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::confirmed())
-        .unwrap()
-        .value
-    {
-        println!("merkle distributor account exists, checking parameters...");
-        check_distributor_onchain_matches(
-            &account,
-            &merkle_tree,
-            new_distributor_args,
-            keypair.pubkey(),
-            &args,
-        ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
-    }
-
     println!("creating new distributor with args: {new_distributor_args:#?}");
 
-    let program = args.get_program_client();
-    let clawback_receiver = get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
+    let mut paths: Vec<_> = fs::read_dir(&new_distributor_args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
 
-    let new_distributor_ix = Instruction {
-        program_id: args.program_id,
-        accounts: merkle_distributor::accounts::NewDistributor {
-            clawback_receiver,
-            mint: args.mint,
-            token_vault,
-            distributor: distributor_pubkey,
-            system_program: solana_program::system_program::id(),
-            associated_token_program: spl_associated_token_account::ID,
-            token_program: token::ID,
-            admin: keypair.pubkey(),
+    for file in paths {
+        let single_tree_path = file.path();
+
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+        let (distributor_pubkey, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+        let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
+
+        if let Some(account) = client
+            .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::confirmed())
+            .unwrap()
+            .value
+        {
+            println!(
+                "merkle distributor {} account exists, checking parameters...",
+                merkle_tree.airdrop_version
+            );
+            check_distributor_onchain_matches(
+                &account,
+                &merkle_tree,
+                new_distributor_args,
+                keypair.pubkey(),
+                &args,
+            ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
+            continue;
         }
-        .to_account_metas(None),
-        data: merkle_distributor::instruction::NewDistributor {
-            version: args.airdrop_version,
-            root: merkle_tree.merkle_root,
-            max_total_claim: merkle_tree.max_total_claim,
-            max_num_nodes: merkle_tree.max_num_nodes,
-            start_vesting_ts: new_distributor_args.start_vesting_ts,
-            end_vesting_ts: new_distributor_args.end_vesting_ts,
-            clawback_start_ts: new_distributor_args.clawback_start_ts,
-        }
-        .data(),
-    };
 
-    let blockhash = client.get_latest_blockhash().unwrap();
-    let tx = Transaction::new_signed_with_payer(
-        &[new_distributor_ix],
-        Some(&keypair.pubkey()),
-        &[&keypair],
-        blockhash,
-    );
+        let program = args.get_program_client();
+        let clawback_receiver = get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
 
-    // See comments on new_distributor instruction inside the program to ensure this transaction
-    // didn't get frontrun.
-    // If this fails, make sure to run it again.
-    match client.send_and_confirm_transaction_with_spinner(&tx) {
-        Ok(_) => {}
-        Err(e) => {
-            println!("Failed to create MerkleDistributor: {:?}", e);
+        let new_distributor_ix = Instruction {
+            program_id: args.program_id,
+            accounts: merkle_distributor::accounts::NewDistributor {
+                clawback_receiver,
+                mint: args.mint,
+                token_vault,
+                distributor: distributor_pubkey,
+                system_program: solana_program::system_program::id(),
+                associated_token_program: spl_associated_token_account::ID,
+                token_program: token::ID,
+                admin: keypair.pubkey(),
+            }
+            .to_account_metas(None),
+            data: merkle_distributor::instruction::NewDistributor {
+                version: merkle_tree.airdrop_version,
+                root: merkle_tree.merkle_root,
+                max_total_claim: merkle_tree.max_total_claim,
+                max_num_nodes: merkle_tree.max_num_nodes,
+                start_vesting_ts: new_distributor_args.start_vesting_ts,
+                end_vesting_ts: new_distributor_args.end_vesting_ts,
+                clawback_start_ts: new_distributor_args.clawback_start_ts,
+            }
+            .data(),
+        };
 
-            // double check someone didn't frontrun this transaction with a malicious merkle root
-            if let Some(account) = client
-                .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::processed())
-                .unwrap()
-                .value
-            {
-                check_distributor_onchain_matches(
+        let blockhash = client.get_latest_blockhash().unwrap();
+        let tx = Transaction::new_signed_with_payer(
+            &[new_distributor_ix],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            blockhash,
+        );
+
+        // See comments on new_distributor instruction inside the program to ensure this transaction
+        // didn't get frontrun.
+        // If this fails, make sure to run it again.
+        match client.send_and_confirm_transaction_with_spinner(&tx) {
+            Ok(_) => {
+                println!(
+                    "done create merkle distributor version {} {:?}",
+                    merkle_tree.airdrop_version,
+                    tx.get_signature(),
+                );
+            }
+            Err(e) => {
+                println!("Failed to create MerkleDistributor: {:?}", e);
+
+                // double check someone didn't frontrun this transaction with a malicious merkle root
+                if let Some(account) = client
+                    .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::processed())
+                    .unwrap()
+                    .value
+                {
+                    check_distributor_onchain_matches(
                     &account,
                     &merkle_tree,
                     new_distributor_args,
                     keypair.pubkey(),
                     args,
                 ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
+                }
             }
         }
     }
@@ -471,7 +502,7 @@ fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
     let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+        get_merkle_distributor_pda(&args.program_id, &args.mint, clawback_args.airdrop_version);
 
     let from = get_associated_token_address(&distributor, &args.mint);
     println!("from: {from}");
@@ -508,17 +539,24 @@ fn process_create_merkle_tree(merkle_tree_args: &CreateMerkleTreeArgs) {
     let mut csv_entries = CsvEntry::new_from_file(&merkle_tree_args.csv_path).unwrap();
     let max_nodes_per_tree = merkle_tree_args.max_nodes_per_tree as usize;
 
+    let base_path = &merkle_tree_args.merkle_tree_path;
+    let mut index = 0;
     while csv_entries.len() > 0 {
         let last_index = max_nodes_per_tree.min(csv_entries.len());
         let sub_tree = csv_entries[0..last_index].to_vec();
         csv_entries = csv_entries[last_index..csv_entries.len()].to_vec();
 
-        let merkle_tree = AirdropMerkleTree::new_from_entries(sub_tree).unwrap();
-        merkle_tree.write_to_file(&merkle_tree_args.merkle_tree_path);
-    }
+        // use index as version
+        let merkle_tree = AirdropMerkleTree::new_from_entries(sub_tree, index).unwrap();
 
-    // let merkle_tree = AirdropMerkleTree::new_from_csv(&merkle_tree_args.csv_path).unwrap();
-    // merkle_tree.write_to_file(&merkle_tree_args.merkle_tree_path);
+        let base_path_clone = base_path.clone();
+        let path = base_path_clone
+            .as_path()
+            .join(format!("tree_{}.json", index));
+
+        merkle_tree.write_to_file(&path);
+        index += 1;
+    }
 }
 
 fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
@@ -527,7 +565,7 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
     let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+        get_merkle_distributor_pda(&args.program_id, &args.mint, set_admin_args.airdrop_version);
 
     let set_admin_ix = Instruction {
         program_id: args.program_id,
@@ -554,13 +592,16 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
     println!("Successfully set admin! signature: {signature:#?}");
 }
 
-fn process_enable_pool(args: &Args) {
+fn process_enable_pool(args: &Args, update_pool_args: &UpdatePoolStatusArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let (distributor, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        update_pool_args.airdrop_version,
+    );
 
     let set_admin_ix = Instruction {
         program_id: args.program_id,
@@ -586,13 +627,16 @@ fn process_enable_pool(args: &Args) {
     println!("Successfully enable pool! signature: {signature:#?}");
 }
 
-fn process_disable_pool(args: &Args) {
+fn process_disable_pool(args: &Args, update_pool_args: &UpdatePoolStatusArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let (distributor, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        update_pool_args.airdrop_version,
+    );
 
     let set_admin_ix = Instruction {
         program_id: args.program_id,
@@ -624,10 +668,8 @@ fn process_create_dummy_csv(args: &CreateDummyCsv) {
     wtr.write_record(&["pubkey", "amount"]).unwrap();
 
     // add my key
-    wtr.write_record(&["DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX", "10000"])
-        .unwrap();
-    for _i in 0..100000 {
-        wtr.write_record(&[&Pubkey::new_unique().to_string(), "1000"])
+    for _i in 0..args.num_records {
+        wtr.write_record(&[&Pubkey::new_unique().to_string(), &args.amount.to_string()])
             .unwrap();
     }
 
