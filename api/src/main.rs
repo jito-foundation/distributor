@@ -40,10 +40,8 @@ pub struct Args {
     /// Airdrop version
     #[clap(long, env)]
     airdrop_version: u64,
-
-    /// Enables the proof endpoint, which will allow users to claim
-    #[clap(long, env)]
-    enable_proof_endpoint: bool,
+    // #[clap(long, env)]
+    // enable_proof_endpoint: bool,
 }
 
 #[tokio::main]
@@ -74,7 +72,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         rpc_client,
     });
 
-    let app = router::get_routes(state, args.enable_proof_endpoint);
+    let app = router::get_routes(state);
 
     axum::Server::bind(&args.bind_addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())

@@ -21,7 +21,7 @@ pub fn get_proof(merkle_tree: &MerkleTree, index: usize) -> Vec<[u8; 32]> {
 pub fn get_max_total_claim(nodes: &[TreeNode]) -> u64 {
     nodes
         .iter()
-        .try_fold(0, |acc: u64, n| acc.checked_add(n.total_amount()))
+        .try_fold(0, |acc: u64, n| acc.checked_add(n.amount()))
         .unwrap()
 }
 
@@ -64,32 +64,25 @@ pub struct MerkleValidationError {
 mod tests {
     use super::*;
     // Helper function to create a tree node
-    fn create_node(
-        claimant: Pubkey,
-        total_unlocked_staker: u64,
-        total_locked_staker: u64,
-        total_unlocked_searcher: u64,
-        total_locked_searcher: u64,
-        total_unlocked_validator: u64,
-        total_locked_validator: u64,
-    ) -> TreeNode {
+    fn create_node(claimant: Pubkey, amount: u64) -> TreeNode {
         TreeNode {
             claimant,
+            amount,
             proof: None,
-            total_unlocked_staker,
-            total_locked_staker,
-            total_unlocked_searcher,
-            total_locked_searcher,
-            total_unlocked_validator,
-            total_locked_validator,
+            // total_unlocked_staker,
+            // total_locked_staker,
+            // total_unlocked_searcher,
+            // total_locked_searcher,
+            // total_unlocked_validator,
+            // total_locked_validator,
         }
     }
 
     #[test]
     fn test_get_max_total_claim_no_overflow() {
         let nodes = vec![
-            create_node(Pubkey::new_unique(), 100, 200, 0, 0, 0, 0),
-            create_node(Pubkey::new_unique(), 300, 400, 0, 0, 0, 0),
+            create_node(Pubkey::new_unique(), 100),
+            create_node(Pubkey::new_unique(), 300),
         ];
 
         let total = get_max_total_claim(&nodes);
@@ -101,8 +94,8 @@ mod tests {
     fn test_get_max_total_claim_overflow() {
         let large_number = u64::MAX / 2;
         let nodes = vec![
-            create_node(Pubkey::new_unique(), large_number, large_number, 0, 0, 0, 0),
-            create_node(Pubkey::new_unique(), large_number, large_number, 0, 0, 0, 0),
+            create_node(Pubkey::new_unique(), large_number),
+            create_node(Pubkey::new_unique(), large_number),
         ];
 
         let _ = get_max_total_claim(&nodes);

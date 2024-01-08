@@ -12,6 +12,7 @@ use clap::{Parser, Subcommand};
 use csv::Writer;
 use jito_merkle_tree::{
     airdrop_merkle_tree::AirdropMerkleTree,
+    csv_entry::CsvEntry,
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
 };
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
@@ -87,7 +88,7 @@ pub enum Commands {
     DisablePool(UpdatePoolStatusArgs),
 
     CreateTestList(CreateTestListArgs),
-    CreateCsv(CreateDummyCsv),
+    CreateDummyCsv(CreateDummyCsv),
 }
 
 // NewClaim and Claim subcommand args
@@ -137,6 +138,10 @@ pub struct CreateMerkleTreeArgs {
     /// Merkle tree out path
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
+
+    /// max nodes per tree
+    #[clap(long, env)]
+    pub max_nodes_per_tree: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -189,7 +194,7 @@ fn main() {
         Commands::DisablePool(_args) => {
             process_disable_pool(&args);
         }
-        Commands::CreateCsv(test_args) => {
+        Commands::CreateDummyCsv(test_args) => {
             process_create_dummy_csv(test_args);
         }
         Commands::CreateTestList(create_test_list_args) => {
@@ -248,8 +253,8 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
         }
         .to_account_metas(None),
         data: merkle_distributor::instruction::NewClaim {
-            amount_unlocked: node.amount_unlocked(),
-            amount_locked: node.amount_locked(),
+            amount_unlocked: node.amount(),
+            amount_locked: 0,
             proof: node.proof.expect("proof not found"),
         }
         .data(),
@@ -500,8 +505,20 @@ fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
 }
 
 fn process_create_merkle_tree(merkle_tree_args: &CreateMerkleTreeArgs) {
-    let merkle_tree = AirdropMerkleTree::new_from_csv(&merkle_tree_args.csv_path).unwrap();
-    merkle_tree.write_to_file(&merkle_tree_args.merkle_tree_path);
+    let mut csv_entries = CsvEntry::new_from_file(&merkle_tree_args.csv_path).unwrap();
+    let max_nodes_per_tree = merkle_tree_args.max_nodes_per_tree as usize;
+
+    while csv_entries.len() > 0 {
+        let last_index = max_nodes_per_tree.min(csv_entries.len());
+        let sub_tree = csv_entries[0..last_index].to_vec();
+        csv_entries = csv_entries[last_index..csv_entries.len()].to_vec();
+
+        let merkle_tree = AirdropMerkleTree::new_from_entries(sub_tree).unwrap();
+        merkle_tree.write_to_file(&merkle_tree_args.merkle_tree_path);
+    }
+
+    // let merkle_tree = AirdropMerkleTree::new_from_csv(&merkle_tree_args.csv_path).unwrap();
+    // merkle_tree.write_to_file(&merkle_tree_args.merkle_tree_path);
 }
 
 fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
@@ -604,19 +621,13 @@ fn process_disable_pool(args: &Args) {
 fn process_create_dummy_csv(args: &CreateDummyCsv) {
     let mut wtr = Writer::from_path(&args.csv_path).unwrap();
 
-    wtr.write_record(&["pubkey", "amount_unlocked", "amount_locked", "category"])
-        .unwrap();
+    wtr.write_record(&["pubkey", "amount"]).unwrap();
 
     // add my key
-    wtr.write_record(&[
-        "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",
-        "10000",
-        "0",
-        "Searcher",
-    ])
-    .unwrap();
+    wtr.write_record(&["DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX", "10000"])
+        .unwrap();
     for _i in 0..100000 {
-        wtr.write_record(&[&Pubkey::new_unique().to_string(), "1000", "0", "Searcher"])
+        wtr.write_record(&[&Pubkey::new_unique().to_string(), "1000"])
             .unwrap();
     }
 
@@ -648,17 +659,17 @@ fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListA
         "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
     ];
     let mut wtr = Writer::from_path(&create_test_list_args.csv_path).unwrap();
-    wtr.write_record(&["pubkey", "amount_unlocked", "amount_locked", "category"])
-        .unwrap();
+    wtr.write_record(&["pubkey", "amount"]).unwrap();
 
     for &addr in pre_list.iter() {
-        wtr.write_record(&[addr, "6000", "0", "Searcher"]).unwrap();
+        wtr.write_record(&[addr, "6000"]).unwrap();
     }
     wtr.flush().unwrap();
 
     let merkle_tree_args = &CreateMerkleTreeArgs {
         csv_path: create_test_list_args.csv_path.clone(),
         merkle_tree_path: create_test_list_args.merkle_tree_path.clone(),
+        max_nodes_per_tree: 10000,
     };
     process_create_merkle_tree(merkle_tree_args);
 }
