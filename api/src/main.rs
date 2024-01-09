@@ -3,6 +3,7 @@ mod router;
 
 use std::{
     collections::HashMap, fmt::Debug, fs, net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc,
+    thread, time,
 };
 
 use clap::Parser;
@@ -16,7 +17,6 @@ use crate::{
     error::ApiError,
     router::{Distributors, SingleDistributor},
 };
-
 pub type Result<T> = std::result::Result<T, ApiError>;
 
 #[derive(Parser, Debug)]
@@ -67,6 +67,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let mut max_num_nodes = 0u64;
     let mut max_total_claim = 0u64;
     let mut distributors = vec![];
+    let one_sec = time::Duration::from_millis(1000);
     for file in paths {
         let single_tree_path = file.path();
         let single_tree = AirdropMerkleTree::new_from_file(&single_tree_path)?;
@@ -90,6 +91,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         for node in single_tree.tree_nodes.iter() {
             tree.insert(node.claimant, (distributor_pubkey, node.clone()));
         }
+        println!("done {}", single_tree.airdrop_version);
+        thread::sleep(one_sec);
     }
 
     distributors.sort_unstable_by(|a, b| a.airdrop_version.cmp(&b.airdrop_version));
@@ -111,5 +114,6 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
+    info!("done");
     Ok(())
 }

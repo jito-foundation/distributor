@@ -144,11 +144,15 @@ export type MerkleDistributor = {
         {
           "name": "clawbackStartTs",
           "type": "i64"
+        },
+        {
+          "name": "enableSlot",
+          "type": "u64"
         }
       ]
     },
     {
-      "name": "enablePool",
+      "name": "setEnableSlot",
       "accounts": [
         {
           "name": "distributor",
@@ -170,32 +174,12 @@ export type MerkleDistributor = {
           ]
         }
       ],
-      "args": []
-    },
-    {
-      "name": "disablePool",
-      "accounts": [
+      "args": [
         {
-          "name": "distributor",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "[MerkleDistributor]."
-          ],
-          "relations": [
-            "admin"
-          ]
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "Payer to create the distributor."
-          ]
+          "name": "enableSlot",
+          "type": "u64"
         }
-      ],
-      "args": []
+      ]
     },
     {
       "name": "newClaim",
@@ -649,11 +633,11 @@ export type MerkleDistributor = {
             "type": "bool"
           },
           {
-            "name": "isEnable",
+            "name": "enableSlot",
             "docs": [
-              "whether it is enable to claim"
+              "this merkle tree is enable from this slot"
             ],
-            "type": "bool"
+            "type": "u64"
           }
         ]
       }
@@ -784,8 +768,8 @@ export type MerkleDistributor = {
     },
     {
       "code": 6018,
-      "name": "PoolIsDisable",
-      "msg": "Pool is disable"
+      "name": "ClaimingIsNotStarted",
+      "msg": "Claiming is not started"
     }
   ]
 };
@@ -936,11 +920,15 @@ export const IDL: MerkleDistributor = {
         {
           "name": "clawbackStartTs",
           "type": "i64"
+        },
+        {
+          "name": "enableSlot",
+          "type": "u64"
         }
       ]
     },
     {
-      "name": "enablePool",
+      "name": "setEnableSlot",
       "accounts": [
         {
           "name": "distributor",
@@ -962,32 +950,12 @@ export const IDL: MerkleDistributor = {
           ]
         }
       ],
-      "args": []
-    },
-    {
-      "name": "disablePool",
-      "accounts": [
+      "args": [
         {
-          "name": "distributor",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "[MerkleDistributor]."
-          ],
-          "relations": [
-            "admin"
-          ]
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "Payer to create the distributor."
-          ]
+          "name": "enableSlot",
+          "type": "u64"
         }
-      ],
-      "args": []
+      ]
     },
     {
       "name": "newClaim",
@@ -1441,11 +1409,11 @@ export const IDL: MerkleDistributor = {
             "type": "bool"
           },
           {
-            "name": "isEnable",
+            "name": "enableSlot",
             "docs": [
-              "whether it is enable to claim"
+              "this merkle tree is enable from this slot"
             ],
-            "type": "bool"
+            "type": "u64"
           }
         ]
       }
@@ -1576,8 +1544,8 @@ export const IDL: MerkleDistributor = {
     },
     {
       "code": 6018,
-      "name": "PoolIsDisable",
-      "msg": "Pool is disable"
+      "name": "ClaimingIsNotStarted",
+      "msg": "Claiming is not started"
     }
   ]
 };
