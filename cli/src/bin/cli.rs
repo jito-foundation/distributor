@@ -187,7 +187,7 @@ fn main() {
             process_enable_pool(&args);
         }
         Commands::DisablePool(_args) => {
-            process_enable_pool(&args);
+            process_disable_pool(&args);
         }
         Commands::CreateCsv(test_args) => {
             process_create_dummy_csv(test_args);
