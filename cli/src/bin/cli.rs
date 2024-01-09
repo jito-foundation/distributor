@@ -10,9 +10,14 @@ use std::{
 use anchor_client::{
     solana_sdk::signer::keypair::read_keypair_file, Client as AnchorClient, Cluster, Program,
 };
-use anchor_lang::{prelude::Pubkey, AccountDeserialize, InstructionData, Key, ToAccountMetas};
+use anchor_lang::{
+    prelude::{Clock, Pubkey},
+    solana_program::sysvar,
+    AccountDeserialize, InstructionData, Key, ToAccountMetas,
+};
 use anchor_spl::token::{self, TokenAccount};
 use anyhow::Result;
+use bincode::deserialize;
 use clap::{Parser, Subcommand};
 use csv::Writer;
 use jito_merkle_tree::{
@@ -21,7 +26,7 @@ use jito_merkle_tree::{
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
 };
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
-use solana_program::instruction::Instruction;
+use solana_program::{clock::DEFAULT_MS_PER_SLOT, instruction::Instruction};
 use solana_rpc_client::rpc_client::{RpcClient, SerializableTransaction};
 use solana_sdk::{
     account::Account,
@@ -84,8 +89,8 @@ pub enum Commands {
     CreateMerkleTree(CreateMerkleTreeArgs),
     SetAdmin(SetAdminArgs),
 
-    EnablePool(UpdatePoolStatusArgs),
-    DisablePool(UpdatePoolStatusArgs),
+    SetEnableSlot(SetEnableSlotArgs),
+    SetEnableSlotByTime(SetEnableSlotByTimeArgs),
 
     CreateTestList(CreateTestListArgs),
     CreateDummyCsv(CreateDummyCsv),
@@ -117,6 +122,9 @@ pub struct NewDistributorArgs {
     /// When to make the clawback period start. Must be at least a day after the end_vesting_ts
     #[clap(long, env)]
     pub clawback_start_ts: i64,
+
+    #[clap(long, env)]
+    pub enable_slot: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -151,9 +159,21 @@ pub struct SetAdminArgs {
 }
 
 #[derive(Parser, Debug)]
-pub struct UpdatePoolStatusArgs {
+pub struct SetEnableSlotArgs {
+    /// Merkle tree out path
     #[clap(long, env)]
-    pub airdrop_version: u64,
+    pub merkle_tree_path: PathBuf,
+    #[clap(long, env)]
+    pub slot: u64,
+}
+
+#[derive(Parser, Debug)]
+pub struct SetEnableSlotByTimeArgs {
+    /// Merkle tree out path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+    #[clap(long, env)]
+    pub timestamp: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -195,12 +215,11 @@ fn main() {
         Commands::SetAdmin(set_admin_args) => {
             process_set_admin(&args, set_admin_args);
         }
-        Commands::EnablePool(update_pool_args) => {
-            process_enable_pool(&args, update_pool_args);
+        Commands::SetEnableSlot(set_enable_slot_args) => {
+            process_set_enable_slot(&args, set_enable_slot_args);
         }
-
-        Commands::DisablePool(update_pool_args) => {
-            process_enable_pool(&args, update_pool_args);
+        Commands::SetEnableSlotByTime(set_enable_slot_by_time_args) => {
+            process_set_enable_slot_by_time(&args, set_enable_slot_by_time_args);
         }
         Commands::CreateDummyCsv(test_args) => {
             process_create_dummy_csv(test_args);
@@ -367,8 +386,11 @@ fn check_distributor_onchain_matches(
             return Err("clawback_start_ts mismatch");
         }
 
-        // TODO fix code
+        if distributor.enable_slot != new_distributor_args.enable_slot {
+            return Err("enable_slot mismatch");
+        }
 
+        // TODO fix code
         let program = args.get_program_client();
         let clawback_receiver_token_account: TokenAccount =
             program.account(distributor.clawback_receiver).unwrap();
@@ -447,6 +469,7 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
                 start_vesting_ts: new_distributor_args.start_vesting_ts,
                 end_vesting_ts: new_distributor_args.end_vesting_ts,
                 clawback_start_ts: new_distributor_args.clawback_start_ts,
+                enable_slot: new_distributor_args.enable_slot,
             }
             .data(),
         };
@@ -592,92 +615,125 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
     println!("Successfully set admin! signature: {signature:#?}");
 }
 
-fn process_enable_pool(args: &Args, update_pool_args: &UpdatePoolStatusArgs) {
+fn process_set_enable_slot(args: &Args, set_enable_slot_args: &SetEnableSlotArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let (distributor, _bump) = get_merkle_distributor_pda(
-        &args.program_id,
-        &args.mint,
-        update_pool_args.airdrop_version,
-    );
+    let mut paths: Vec<_> = fs::read_dir(&set_enable_slot_args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
 
-    let set_admin_ix = Instruction {
-        program_id: args.program_id,
-        accounts: merkle_distributor::accounts::UpdatePoolStatus {
-            distributor,
-            admin: keypair.pubkey(),
-        }
-        .to_account_metas(None),
-        data: merkle_distributor::instruction::EnablePool {}.data(),
-    };
+    for file in paths {
+        let single_tree_path = file.path();
 
-    let tx = Transaction::new_signed_with_payer(
-        &[set_admin_ix],
-        Some(&keypair.pubkey()),
-        &[&keypair],
-        client.get_latest_blockhash().unwrap(),
-    );
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
 
-    let signature = client
-        .send_and_confirm_transaction_with_spinner(&tx)
-        .unwrap();
+        let (distributor, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
 
-    println!("Successfully enable pool! signature: {signature:#?}");
-}
+        let set_admin_ix = Instruction {
+            program_id: args.program_id,
+            accounts: merkle_distributor::accounts::SetEnableSlot {
+                distributor,
+                admin: keypair.pubkey(),
+            }
+            .to_account_metas(None),
+            data: merkle_distributor::instruction::SetEnableSlot {
+                enable_slot: set_enable_slot_args.slot,
+            }
+            .data(),
+        };
 
-fn process_disable_pool(args: &Args, update_pool_args: &UpdatePoolStatusArgs) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+        let tx = Transaction::new_signed_with_payer(
+            &[set_admin_ix],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            client.get_latest_blockhash().unwrap(),
+        );
 
-    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
-
-    let (distributor, _bump) = get_merkle_distributor_pda(
-        &args.program_id,
-        &args.mint,
-        update_pool_args.airdrop_version,
-    );
-
-    let set_admin_ix = Instruction {
-        program_id: args.program_id,
-        accounts: merkle_distributor::accounts::UpdatePoolStatus {
-            distributor,
-            admin: keypair.pubkey(),
-        }
-        .to_account_metas(None),
-        data: merkle_distributor::instruction::DisablePool {}.data(),
-    };
-
-    let tx = Transaction::new_signed_with_payer(
-        &[set_admin_ix],
-        Some(&keypair.pubkey()),
-        &[&keypair],
-        client.get_latest_blockhash().unwrap(),
-    );
-
-    let signature = client
-        .send_and_confirm_transaction_with_spinner(&tx)
-        .unwrap();
-
-    println!("Successfully disable pool! signature: {signature:#?}");
-}
-
-fn process_create_dummy_csv(args: &CreateDummyCsv) {
-    let mut wtr = Writer::from_path(&args.csv_path).unwrap();
-
-    wtr.write_record(&["pubkey", "amount"]).unwrap();
-
-    // add my key
-    for _i in 0..args.num_records {
-        wtr.write_record(&[&Pubkey::new_unique().to_string(), &args.amount.to_string()])
+        let signature = client
+            .send_and_confirm_transaction_with_spinner(&tx)
             .unwrap();
-    }
 
-    wtr.flush().unwrap();
+        println!(
+            "Successfully set enable slot {} airdrop version {} ! signature: {signature:#?}",
+            set_enable_slot_args.slot, merkle_tree.airdrop_version
+        );
+    }
 }
 
-fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListArgs) {
-    let pre_list = vec![
+fn process_set_enable_slot_by_time(
+    args: &Args,
+    set_enable_slot_by_time_args: &SetEnableSlotByTimeArgs,
+) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+
+    let mut paths: Vec<_> = fs::read_dir(&set_enable_slot_by_time_args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
+
+    let enable_time = set_enable_slot_by_time_args.timestamp;
+
+    let clock_account = client.get_account(&sysvar::clock::id()).unwrap();
+    let clock = deserialize::<Clock>(&clock_account.data).unwrap();
+    let current_time = u64::try_from(clock.unix_timestamp).unwrap();
+    let current_slot = clock.slot;
+    let default_slot_time = DEFAULT_MS_PER_SLOT;
+
+    let slot = if enable_time > current_time {
+        current_slot + (enable_time - current_time) * 1000 / default_slot_time
+    } else {
+        current_slot - (current_time - enable_time) * 1000 / default_slot_time
+    };
+
+    for file in paths {
+        let single_tree_path = file.path();
+
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+
+        let (distributor, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+
+        let set_admin_ix = Instruction {
+            program_id: args.program_id,
+            accounts: merkle_distributor::accounts::SetEnableSlot {
+                distributor,
+                admin: keypair.pubkey(),
+            }
+            .to_account_metas(None),
+            data: merkle_distributor::instruction::SetEnableSlot { enable_slot: slot }.data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[set_admin_ix],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            client.get_latest_blockhash().unwrap(),
+        );
+
+        let signature = client
+            .send_and_confirm_transaction_with_spinner(&tx)
+            .unwrap();
+
+        println!(
+            "Successfully enable slot {slot} timestamp {} airdrop version {}! signature: {signature:#?}",
+            enable_time,
+            merkle_tree.airdrop_version
+        );
+    }
+}
+
+fn get_pre_list() -> Vec<String> {
+    let list = vec![
         "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",
         "BULRqL3U2jPgwvz6HYCyBVq9BMtK94Y1Nz98KQop23aD",
         "7w32LzRsJrQiE7S3ZSdkz9TSFGey1XNsonPmdm9xDUch",
@@ -700,10 +756,41 @@ fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListA
         "EVfUfs9XNwJmfNvoazDbZVb6ecnGCxgQrJzsCQHoQ4q7",
         "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
     ];
+    let list: Vec<String> = list.iter().map(|x| x.to_string()).collect();
+    list
+}
+
+fn process_create_dummy_csv(args: &CreateDummyCsv) {
+    let mut wtr = Writer::from_path(&args.csv_path).unwrap();
+
+    wtr.write_record(&["pubkey", "amount"]).unwrap();
+
+    // add my key
+    let pre_list: Vec<String> = get_pre_list();
+    let mut full_list = vec![];
+    for _i in 0..(args.num_records - pre_list.len() as u64) {
+        full_list.push(Pubkey::new_unique().to_string());
+    }
+    // merge with pre_list
+    let num_node = args.num_records.checked_div(pre_list.len() as u64).unwrap() as usize;
+    for (i, address) in pre_list.iter().enumerate() {
+        full_list.insert(num_node * i, address.clone());
+    }
+
+    for address in full_list.iter() {
+        wtr.write_record(&[address, &args.amount.to_string()])
+            .unwrap();
+    }
+
+    wtr.flush().unwrap();
+}
+
+fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListArgs) {
+    let pre_list = get_pre_list();
     let mut wtr = Writer::from_path(&create_test_list_args.csv_path).unwrap();
     wtr.write_record(&["pubkey", "amount"]).unwrap();
 
-    for &addr in pre_list.iter() {
+    for addr in pre_list.iter() {
         wtr.write_record(&[addr, "6000"]).unwrap();
     }
     wtr.flush().unwrap();

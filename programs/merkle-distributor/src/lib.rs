@@ -64,6 +64,7 @@ pub mod merkle_distributor {
         start_vesting_ts: i64,
         end_vesting_ts: i64,
         clawback_start_ts: i64,
+        enable_slot: u64,
     ) -> Result<()> {
         handle_new_distributor(
             ctx,
@@ -74,17 +75,13 @@ pub mod merkle_distributor {
             start_vesting_ts,
             end_vesting_ts,
             clawback_start_ts,
+            enable_slot,
         )
     }
 
     #[allow(clippy::result_large_err)]
-    pub fn enable_pool(ctx: Context<UpdatePoolStatus>) -> Result<()> {
-        handle_enable(ctx)
-    }
-
-    #[allow(clippy::result_large_err)]
-    pub fn disable_pool(ctx: Context<UpdatePoolStatus>) -> Result<()> {
-        handle_disable(ctx)
+    pub fn set_enable_slot(ctx: Context<SetEnableSlot>, enable_slot: u64) -> Result<()> {
+        handle_set_enable_slot(ctx, enable_slot)
     }
 
     #[allow(clippy::result_large_err)]

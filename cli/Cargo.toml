@@ -16,3 +16,4 @@ solana-sdk = { workspace = true }
 spl-associated-token-account = { workspace = true }
 csv="1.3.0"
 anyhow = "1.0.57"
+bincode = "^1.3.1"

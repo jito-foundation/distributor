@@ -78,6 +78,7 @@ pub fn handle_new_distributor(
     start_vesting_ts: i64,
     end_vesting_ts: i64,
     clawback_start_ts: i64,
+    enable_slot: u64,
 ) -> Result<()> {
     let curr_ts = Clock::get()?.unix_timestamp;
 
@@ -122,11 +123,11 @@ pub fn handle_new_distributor(
     distributor.clawback_receiver = ctx.accounts.clawback_receiver.key();
     distributor.admin = ctx.accounts.admin.key();
     distributor.clawed_back = false;
-    distributor.is_enable = false;
+    distributor.enable_slot = enable_slot;
 
     // Note: might get truncated, do not rely on
     msg! {
-        "New distributor created with version = {}, mint={}, vault={} max_total_claim={}, max_nodes: {}, start_ts: {}, end_ts: {}, clawback_start: {}, clawback_receiver: {}",
+        "New distributor created with version = {}, mint={}, vault={} max_total_claim={}, max_nodes: {}, start_ts: {}, end_ts: {}, clawback_start: {}, clawback_receiver: {} enable_slot {}",
             distributor.version,
             distributor.mint,
             ctx.accounts.token_vault.key(),
@@ -135,7 +136,8 @@ pub fn handle_new_distributor(
             distributor.start_ts,
             distributor.end_ts,
             distributor.clawback_start_ts,
-            distributor.clawback_receiver
+            distributor.clawback_receiver,
+            distributor.enable_slot,
     };
 
     Ok(())

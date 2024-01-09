@@ -68,10 +68,14 @@ pub fn handle_claim_locked(ctx: Context<ClaimLocked>) -> Result<()> {
 
     let claim_status = &mut ctx.accounts.claim_status;
     let curr_ts = Clock::get()?.unix_timestamp;
+    let curr_slot = Clock::get()?.slot;
 
     require!(!distributor.clawed_back, ErrorCode::ClaimExpired);
 
-    require!(distributor.is_enable, ErrorCode::PoolIsDisable);
+    require!(
+        distributor.enable_slot <= curr_slot,
+        ErrorCode::ClaimingIsNotStarted
+    );
 
     let amount =
         claim_status.amount_withdrawable(curr_ts, distributor.start_ts, distributor.end_ts)?;
