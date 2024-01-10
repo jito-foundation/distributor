@@ -39,6 +39,12 @@ pub struct MerkleDistributor {
     pub clawed_back: bool,
     /// this merkle tree is enable from this slot
     pub enable_slot: u64,
+    /// Buffer 0
+    pub buffer_0: [u8; 32],
+    /// Buffer 1
+    pub buffer_1: [u8; 32],
+    /// Buffer 2
+    pub buffer_2: [u8; 32],
 }
 
 impl MerkleDistributor {

@@ -693,6 +693,42 @@ export type MerkleDistributor = {
               "this merkle tree is enable from this slot"
             ],
             "type": "u64"
+          },
+          {
+            "name": "buffer0",
+            "docs": [
+              "Buffer 0"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer1",
+            "docs": [
+              "Buffer 1"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer2",
+            "docs": [
+              "Buffer 2"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1529,6 +1565,42 @@ export const IDL: MerkleDistributor = {
               "this merkle tree is enable from this slot"
             ],
             "type": "u64"
+          },
+          {
+            "name": "buffer0",
+            "docs": [
+              "Buffer 0"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer1",
+            "docs": [
+              "Buffer 1"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer2",
+            "docs": [
+              "Buffer 2"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
