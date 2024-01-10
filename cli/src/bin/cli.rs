@@ -82,6 +82,7 @@ pub enum Commands {
     Claim(ClaimArgs),
     /// Create a new instance of a merkle distributor
     NewDistributor(NewDistributorArgs),
+    CloseDistributor(CloseDistributorArgs),
     /// Clawback tokens from merkle distributor
     #[clap(hide = true)]
     Clawback(ClawbackArgs),
@@ -94,14 +95,43 @@ pub enum Commands {
 
     CreateTestList(CreateTestListArgs),
     CreateDummyCsv(CreateDummyCsv),
+
+    FundAll(FundAllArgs),
+    Verify(VerifyArgs),
 }
 
+#[derive(Parser, Debug)]
+pub struct CloseDistributorArgs {
+    #[clap(long, env)]
+    pub airdrop_version: u64,
+}
 // NewClaim and Claim subcommand args
 #[derive(Parser, Debug)]
 pub struct ClaimArgs {
     /// Merkle distributor path
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
+}
+
+#[derive(Parser, Debug)]
+pub struct FundAllArgs {
+    /// Merkle distributor path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+}
+
+#[derive(Parser, Debug)]
+pub struct VerifyArgs {
+    /// Merkle distributor path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+
+    /// When to make the clawback period start. Must be at least a day after the end_vesting_ts
+    #[clap(long, env)]
+    pub clawback_start_ts: i64,
+
+    #[clap(long, env)]
+    pub enable_slot: u64,
 }
 
 // NewDistributor subcommand args
@@ -125,6 +155,9 @@ pub struct NewDistributorArgs {
 
     #[clap(long, env)]
     pub enable_slot: u64,
+
+    #[clap(long, env)]
+    pub airdrop_version: Option<u64>,
 }
 
 #[derive(Parser, Debug)]
@@ -205,6 +238,9 @@ fn main() {
         Commands::NewDistributor(new_distributor_args) => {
             process_new_distributor(&args, new_distributor_args);
         }
+        Commands::CloseDistributor(close_distributor_args) => {
+            process_close_distributor(&args, close_distributor_args);
+        }
         Commands::Claim(claim_args) => {
             process_claim(&args, claim_args);
         }
@@ -226,6 +262,12 @@ fn main() {
         }
         Commands::CreateTestList(create_test_list_args) => {
             process_create_test_list(&args, create_test_list_args);
+        }
+        Commands::FundAll(fund_all_args) => {
+            process_fund_all(&args, fund_all_args);
+        }
+        Commands::Verify(verfiy_args) => {
+            process_verify(&args, verfiy_args);
         }
     }
 }
@@ -297,6 +339,56 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
         .send_and_confirm_transaction_with_spinner(&tx)
         .unwrap();
     println!("successfully created new claim with signature {signature:#?}");
+}
+
+fn process_close_distributor(args: &Args, close_distributor_args: &CloseDistributorArgs) {
+    let (distributor, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        close_distributor_args.airdrop_version,
+    );
+    let program = args.get_program_client();
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    // verify distributor is existed
+    let merkle_distributor_state = program.account::<MerkleDistributor>(distributor).unwrap();
+    let destination_token_account =
+        get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
+
+    let close_distributor_ix = Instruction {
+        program_id: args.program_id,
+        accounts: merkle_distributor::accounts::CloseDistributor {
+            distributor,
+            token_vault: merkle_distributor_state.token_vault,
+            admin: keypair.pubkey(),
+            destination_token_account,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: merkle_distributor::instruction::CloseDistributor {}.data(),
+    };
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
+    let blockhash = client.get_latest_blockhash().unwrap();
+    let tx = Transaction::new_signed_with_payer(
+        &[close_distributor_ix],
+        Some(&keypair.pubkey()),
+        &[&keypair],
+        blockhash,
+    );
+    match client.send_and_confirm_transaction_with_spinner(&tx) {
+        Ok(_) => {
+            println!(
+                "done close merkle distributor version {} {:?}",
+                close_distributor_args.airdrop_version,
+                tx.get_signature(),
+            );
+        }
+        Err(e) => {
+            println!(
+                "Failed to close MerkleDistributor version {}: {:?}",
+                close_distributor_args.airdrop_version, e
+            );
+        }
+    }
 }
 
 fn process_claim(args: &Args, claim_args: &ClaimArgs) {
@@ -416,16 +508,23 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
         .map(|r| r.unwrap())
         .collect();
     paths.sort_by_key(|dir| dir.path());
+    let program = args.get_program_client();
 
     for file in paths {
         let single_tree_path = file.path();
 
         let merkle_tree =
             AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+
+        if new_distributor_args.airdrop_version.is_some() {
+            let airdrop_version = new_distributor_args.airdrop_version.unwrap();
+            if airdrop_version != merkle_tree.airdrop_version {
+                continue;
+            }
+        }
         let (distributor_pubkey, _bump) =
             get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
-        let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
-
+        let token_vault = get_or_create_ata(&program, args.mint, distributor_pubkey).unwrap();
         if let Some(account) = client
             .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::confirmed())
             .unwrap()
@@ -445,7 +544,6 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
             continue;
         }
 
-        let program = args.get_program_client();
         let clawback_receiver = get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
 
         let new_distributor_ix = Instruction {
@@ -510,6 +608,13 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
                     args,
                 ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
                 }
+            }
+        }
+
+        if new_distributor_args.airdrop_version.is_some() {
+            let airdrop_version = new_distributor_args.airdrop_version.unwrap();
+            if airdrop_version == merkle_tree.airdrop_version {
+                break;
             }
         }
     }
@@ -801,6 +906,90 @@ fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListA
         max_nodes_per_tree: 10000,
     };
     process_create_merkle_tree(merkle_tree_args);
+}
+
+fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let mut paths: Vec<_> = fs::read_dir(&fund_all_args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
+
+    let source_vault = get_associated_token_address(&keypair.pubkey(), &args.mint);
+
+    for file in paths {
+        let single_tree_path = file.path();
+
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+        let (distributor_pubkey, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+        let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
+
+        let tx = Transaction::new_signed_with_payer(
+            &[spl_token::instruction::transfer(
+                &spl_token::id(),
+                &source_vault,
+                &token_vault,
+                &keypair.pubkey(),
+                &[],
+                merkle_tree.max_total_claim,
+            )
+            .unwrap()],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            client.get_latest_blockhash().unwrap(),
+        );
+
+        let signature = client
+            .send_and_confirm_transaction_with_spinner(&tx)
+            .unwrap();
+
+        println!(
+            "Successfully transfer {} to merkle tree with airdrop version {}! signature: {signature:#?}",
+            merkle_tree.max_total_claim,
+            merkle_tree.airdrop_version
+        );
+    }
+}
+
+fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
+    let mut paths: Vec<_> = fs::read_dir(&verfify_args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
+
+    // TODO fix code
+    let program = args.get_program_client();
+
+    for file in paths {
+        let single_tree_path = file.path();
+
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+        let (distributor_pubkey, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+        let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
+
+        let token_vault_account: TokenAccount = program.account(token_vault).unwrap();
+        assert_eq!(token_vault_account.amount, merkle_tree.max_total_claim);
+
+        let merke_tree_state: MerkleDistributor = program.account(distributor_pubkey).unwrap();
+        assert_eq!(merke_tree_state.root, merkle_tree.merkle_root);
+
+        assert_eq!(
+            merke_tree_state.clawback_start_ts,
+            verfify_args.clawback_start_ts
+        );
+        assert_eq!(merke_tree_state.enable_slot, verfify_args.enable_slot);
+        println!(
+            "done verify merkle tree airdrop version {}",
+            merkle_tree.airdrop_version
+        );
+    }
 }
 
 fn get_or_create_ata<C: Deref<Target = impl Signer> + Clone>(

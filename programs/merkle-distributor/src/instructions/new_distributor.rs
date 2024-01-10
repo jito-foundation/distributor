@@ -36,11 +36,10 @@ pub struct NewDistributor<'info> {
     pub mint: Account<'info, Mint>,
 
     /// Token vault
+    /// Should create previously
     #[account(
-        init,
         associated_token::mint = mint,
         associated_token::authority=distributor,
-        payer = admin,
     )]
     pub token_vault: Account<'info, TokenAccount>,
 

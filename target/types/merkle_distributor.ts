@@ -71,10 +71,11 @@ export type MerkleDistributor = {
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "Token vault"
+            "Token vault",
+            "Should create previously"
           ]
         },
         {
@@ -150,6 +151,60 @@ export type MerkleDistributor = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "closeDistributor",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[MerkleDistributor]."
+          ],
+          "relations": [
+            "admin",
+            "token_vault"
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Clawback receiver token account"
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also has the authority to set the clawback receiver and change itself."
+          ]
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "account receive token back"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [Token] program."
+          ]
+        }
+      ],
+      "args": []
     },
     {
       "name": "setEnableSlot",
@@ -770,6 +825,11 @@ export type MerkleDistributor = {
       "code": 6018,
       "name": "ClaimingIsNotStarted",
       "msg": "Claiming is not started"
+    },
+    {
+      "code": 6019,
+      "name": "CannotCloseDistributor",
+      "msg": "Cannot close distributor"
     }
   ]
 };
@@ -847,10 +907,11 @@ export const IDL: MerkleDistributor = {
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "Token vault"
+            "Token vault",
+            "Should create previously"
           ]
         },
         {
@@ -926,6 +987,60 @@ export const IDL: MerkleDistributor = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "closeDistributor",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[MerkleDistributor]."
+          ],
+          "relations": [
+            "admin",
+            "token_vault"
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Clawback receiver token account"
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also has the authority to set the clawback receiver and change itself."
+          ]
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "account receive token back"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [Token] program."
+          ]
+        }
+      ],
+      "args": []
     },
     {
       "name": "setEnableSlot",
@@ -1546,6 +1661,11 @@ export const IDL: MerkleDistributor = {
       "code": 6018,
       "name": "ClaimingIsNotStarted",
       "msg": "Claiming is not started"
+    },
+    {
+      "code": 6019,
+      "name": "CannotCloseDistributor",
+      "msg": "Cannot close distributor"
     }
   ]
 };

@@ -78,6 +78,11 @@ pub mod merkle_distributor {
             enable_slot,
         )
     }
+    /// only available in test phase
+    #[allow(clippy::result_large_err)]
+    pub fn close_distributor(ctx: Context<CloseDistributor>) -> Result<()> {
+        handle_close_distributor(ctx)
+    }
 
     #[allow(clippy::result_large_err)]
     pub fn set_enable_slot(ctx: Context<SetEnableSlot>, enable_slot: u64) -> Result<()> {

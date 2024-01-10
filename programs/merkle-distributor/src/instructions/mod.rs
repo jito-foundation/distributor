@@ -7,9 +7,10 @@ pub use set_clawback_receiver::*;
 pub use set_enable_slot::*;
 pub mod claim_locked;
 pub mod clawback;
+pub mod close_distributor;
 pub mod new_claim;
 pub mod new_distributor;
-
 pub mod set_admin;
 pub mod set_clawback_receiver;
 pub mod set_enable_slot;
+pub use close_distributor::*;

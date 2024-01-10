@@ -2065,6 +2065,7 @@ dependencies = [
  "solana-rpc-client",
  "solana-sdk",
  "spl-associated-token-account 2.2.0",
+ "spl-token 3.5.0",
 ]
 
 [[package]]

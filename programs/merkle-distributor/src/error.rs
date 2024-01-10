@@ -41,4 +41,6 @@ pub enum ErrorCode {
     InvalidVersion,
     #[msg("Claiming is not started")]
     ClaimingIsNotStarted,
+    #[msg("Cannot close distributor")]
+    CannotCloseDistributor,
 }
