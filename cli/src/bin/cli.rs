@@ -56,14 +56,15 @@ pub struct Args {
     pub program_id: Pubkey,
 
     /// Payer keypair
-    #[clap(long, env, default_value = "~/.config/solana/id.json")]
-    pub keypair_path: String,
+    #[clap(long, env)]
+    pub keypair_path: Option<String>,
 }
 
 impl Args {
     fn get_program_client(&self) -> Program<Rc<Keypair>> {
-        let payer =
-            read_keypair_file(self.keypair_path.clone()).expect("Wallet keypair file not found");
+        // let payer =
+        //     read_keypair_file(self.keypair_path.clone()).expect("Wallet keypair file not found");
+        let payer = Keypair::new();
         let client = AnchorClient::new_with_options(
             Cluster::Custom(self.rpc_url.clone(), self.rpc_url.clone()),
             Rc::new(Keypair::from_bytes(&payer.to_bytes()).unwrap()),
@@ -276,7 +277,8 @@ fn main() {
 }
 
 fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
     let claimant = keypair.pubkey();
     println!("Claiming tokens for user {}...", claimant);
 
@@ -367,9 +369,16 @@ fn process_close_distributor(args: &Args, close_distributor_args: &CloseDistribu
         let (distributor, _bump) =
             get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
         let program = args.get_program_client();
-        let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+        let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+            .expect("Failed reading keypair file");
         // verify distributor is existed
-        let merkle_distributor_state = program.account::<MerkleDistributor>(distributor).unwrap();
+        let merkle_distributor_state = program.account::<MerkleDistributor>(distributor);
+        if merkle_distributor_state.is_err() {
+            println!("skip version {}", merkle_tree.airdrop_version);
+            continue;
+        }
+        let merkle_distributor_state = merkle_distributor_state.unwrap();
+
         let destination_token_account =
             get_or_create_ata(&program, args.mint, keypair.pubkey()).unwrap();
 
@@ -419,7 +428,8 @@ fn process_close_distributor(args: &Args, close_distributor_args: &CloseDistribu
 }
 
 fn process_claim(args: &Args, claim_args: &ClaimArgs) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
     let claimant = keypair.pubkey();
 
     let merkle_tree = AirdropMerkleTree::new_from_file(&claim_args.merkle_tree_path)
@@ -527,7 +537,8 @@ fn check_distributor_onchain_matches(
 fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArgs) {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
     // println!("{}", &args.keypair_path);
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
     println!("creating new distributor with args: {new_distributor_args:#?}");
 
     let mut paths: Vec<_> = fs::read_dir(&new_distributor_args.merkle_tree_path)
@@ -648,7 +659,8 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
 }
 
 fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
-    let payer_keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let payer_keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
     let clawback_keypair = read_keypair_file(&clawback_args.clawback_keypair_path)
         .expect("Failed reading keypair file");
 
@@ -715,7 +727,8 @@ fn process_create_merkle_tree(merkle_tree_args: &CreateMerkleTreeArgs) {
 }
 
 fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
@@ -748,7 +761,8 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
 }
 
 fn process_set_enable_slot(args: &Args, set_enable_slot_args: &SetEnableSlotArgs) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
@@ -802,7 +816,8 @@ fn process_set_enable_slot_by_time(
     args: &Args,
     set_enable_slot_by_time_args: &SetEnableSlotByTimeArgs,
 ) {
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
@@ -937,7 +952,8 @@ fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestListA
 
 fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
-    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
+        .expect("Failed reading keypair file");
     let mut paths: Vec<_> = fs::read_dir(&fund_all_args.merkle_tree_path)
         .unwrap()
         .map(|r| r.unwrap())
