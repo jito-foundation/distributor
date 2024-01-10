@@ -1,7 +1,10 @@
 mod error;
 mod router;
 
-use std::{fmt::Debug, net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc};
+use std::{
+    collections::HashMap, fmt::Debug, fs, net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc,
+    thread, time,
+};
 
 use clap::Parser;
 use jito_merkle_tree::{airdrop_merkle_tree::AirdropMerkleTree, utils::get_merkle_distributor_pda};
@@ -10,8 +13,10 @@ use solana_program::pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use tracing::{info, instrument};
 
-use crate::{error::ApiError, router::read_distributor};
-
+use crate::{
+    error::ApiError,
+    router::{Distributors, SingleDistributor},
+};
 pub type Result<T> = std::result::Result<T, ApiError>;
 
 #[derive(Parser, Debug)]
@@ -36,14 +41,6 @@ pub struct Args {
     /// Program ID
     #[clap(long, env)]
     program_id: Pubkey,
-
-    /// Airdrop version
-    #[clap(long, env)]
-    airdrop_version: u64,
-
-    /// Enables the proof endpoint, which will allow users to claim
-    #[clap(long, env)]
-    enable_proof_endpoint: bool,
 }
 
 #[tokio::main]
@@ -60,25 +57,63 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let rpc_client = RpcClient::new(args.rpc_url.clone());
     info!("started rpc client at {}", args.rpc_url);
 
-    let (merkle_distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let mut paths: Vec<_> = fs::read_dir(&args.merkle_tree_path)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|dir| dir.path());
 
-    let distributor = read_distributor(&rpc_client, &merkle_distributor).await?;
+    let mut tree = HashMap::new();
+    let mut max_num_nodes = 0u64;
+    let mut max_total_claim = 0u64;
+    let mut distributors = vec![];
+    let one_sec = time::Duration::from_millis(1000);
+    for file in paths {
+        let single_tree_path = file.path();
+        let single_tree = AirdropMerkleTree::new_from_file(&single_tree_path)?;
 
-    info!("distributor: {:?}", distributor);
+        let (distributor_pubkey, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, single_tree.airdrop_version);
+
+        max_total_claim = max_total_claim
+            .checked_add(single_tree.max_total_claim)
+            .unwrap();
+        max_num_nodes = max_num_nodes
+            .checked_add(single_tree.max_num_nodes)
+            .unwrap();
+        distributors.push(SingleDistributor {
+            distributor_pubkey: distributor_pubkey.to_string(),
+            // merkle_root: single_tree.merkle_root.clone(),
+            airdrop_version: single_tree.airdrop_version,
+            max_num_nodes: single_tree.max_num_nodes,
+            max_total_claim: single_tree.max_total_claim,
+        });
+        for node in single_tree.tree_nodes.iter() {
+            tree.insert(node.claimant, (distributor_pubkey, node.clone()));
+        }
+        println!("done {}", single_tree.airdrop_version);
+        thread::sleep(one_sec);
+    }
+
+    distributors.sort_unstable_by(|a, b| a.airdrop_version.cmp(&b.airdrop_version));
 
     let state = Arc::new(RouterState {
-        tree: AirdropMerkleTree::new_from_file(&args.merkle_tree_path)?.convert_to_hashmap(),
+        distributors: Distributors {
+            max_num_nodes,
+            max_total_claim,
+            trees: distributors,
+        },
+        tree,
         program_id: args.program_id,
-        distributor_pubkey: merkle_distributor,
         rpc_client,
     });
 
-    let app = router::get_routes(state, args.enable_proof_endpoint);
+    let app = router::get_routes(state);
 
     axum::Server::bind(&args.bind_addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
+    info!("done");
     Ok(())
 }

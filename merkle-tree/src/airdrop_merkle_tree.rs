@@ -30,6 +30,7 @@ const LEAF_PREFIX: &[u8] = &[0];
 pub struct AirdropMerkleTree {
     /// The merkle root, which is uploaded on-chain
     pub merkle_root: [u8; 32],
+    pub airdrop_version: u64,
     pub max_num_nodes: u64,
     pub max_total_claim: u64,
     pub tree_nodes: Vec<TreeNode>,
@@ -38,7 +39,7 @@ pub struct AirdropMerkleTree {
 pub type Result<T> = result::Result<T, MerkleTreeError>;
 
 impl AirdropMerkleTree {
-    pub fn new(tree_nodes: Vec<TreeNode>) -> Result<Self> {
+    pub fn new(tree_nodes: Vec<TreeNode>, airdrop_version: u64) -> Result<Self> {
         // Combine tree nodes with the same claimant, while retaining original order
         let mut tree_nodes_map: IndexMap<Pubkey, TreeNode> = IndexMap::new();
         for tree_node in tree_nodes {
@@ -47,30 +48,7 @@ impl AirdropMerkleTree {
                 .entry(claimant)
                 .and_modify(|n| {
                     println!("duplicate claimant {} found, combining", n.claimant);
-                    n.total_unlocked_staker = n
-                        .total_unlocked_staker
-                        .checked_add(tree_node.total_unlocked_staker)
-                        .unwrap();
-                    n.total_locked_staker = n
-                        .total_locked_staker
-                        .checked_add(tree_node.total_locked_staker)
-                        .unwrap();
-                    n.total_unlocked_searcher = n
-                        .total_unlocked_searcher
-                        .checked_add(tree_node.total_unlocked_searcher)
-                        .unwrap();
-                    n.total_locked_searcher = n
-                        .total_locked_searcher
-                        .checked_add(tree_node.total_locked_searcher)
-                        .unwrap();
-                    n.total_unlocked_validator = n
-                        .total_unlocked_validator
-                        .checked_add(tree_node.total_unlocked_validator)
-                        .unwrap();
-                    n.total_locked_validator = n
-                        .total_locked_validator
-                        .checked_add(tree_node.total_locked_validator)
-                        .unwrap();
+                    n.amount = n.amount.checked_add(tree_node.amount).unwrap();
                 })
                 .or_insert_with(|| tree_node); // If not exists, insert a new entry
         }
@@ -95,24 +73,31 @@ impl AirdropMerkleTree {
                 .get_root()
                 .ok_or(MerkleTreeError::MerkleRootError)?
                 .to_bytes(),
+            airdrop_version,
             max_num_nodes: tree_nodes.len() as u64,
             max_total_claim,
             tree_nodes,
         };
 
         println!(
-            "created merkle tree with {} nodes and max total claim of {}",
-            tree.max_num_nodes, tree.max_total_claim
+            "created merkle tree version {} with {} nodes and max total claim of {}",
+            airdrop_version, tree.max_num_nodes, tree.max_total_claim
         );
         tree.validate()?;
         Ok(tree)
     }
 
     /// Load a merkle tree from a csv path
-    pub fn new_from_csv(path: &PathBuf) -> Result<Self> {
+    pub fn new_from_csv(path: &PathBuf, version: u64) -> Result<Self> {
         let csv_entries = CsvEntry::new_from_file(path)?;
         let tree_nodes: Vec<TreeNode> = csv_entries.into_iter().map(TreeNode::from).collect();
-        let tree = Self::new(tree_nodes)?;
+        let tree = Self::new(tree_nodes, version)?;
+        Ok(tree)
+    }
+
+    pub fn new_from_entries(csv_entries: Vec<CsvEntry>, version: u64) -> Result<Self> {
+        let tree_nodes: Vec<TreeNode> = csv_entries.into_iter().map(TreeNode::from).collect();
+        let tree = Self::new(tree_nodes, version)?;
         Ok(tree)
     }
 
@@ -251,7 +236,7 @@ mod tests {
         kp.pubkey()
     }
 
-    fn new_test_merkle_tree(num_nodes: u64, path: &PathBuf) {
+    fn new_test_merkle_tree(num_nodes: u64, path: &PathBuf, airdrop_version: u64) {
         let mut tree_nodes = vec![];
 
         fn rand_balance() -> u64 {
@@ -262,17 +247,18 @@ mod tests {
             // choose amount unlocked and amount locked as a random u64 between 0 and 100
             tree_nodes.push(TreeNode {
                 claimant: new_test_key(),
+                amount: rand_balance(),
                 proof: None,
-                total_unlocked_staker: rand_balance(),
-                total_locked_staker: rand_balance(),
-                total_unlocked_searcher: rand_balance(),
-                total_locked_searcher: rand_balance(),
-                total_unlocked_validator: rand_balance(),
-                total_locked_validator: rand_balance(),
+                // total_unlocked_staker: rand_balance(),
+                // total_locked_staker: rand_balance(),
+                // total_unlocked_searcher: rand_balance(),
+                // total_locked_searcher: rand_balance(),
+                // total_unlocked_validator: rand_balance(),
+                // total_locked_validator: rand_balance(),
             });
         }
 
-        let merkle_tree = AirdropMerkleTree::new(tree_nodes).unwrap();
+        let merkle_tree = AirdropMerkleTree::new(tree_nodes, airdrop_version).unwrap();
 
         merkle_tree.write_to_file(path);
     }
@@ -281,15 +267,10 @@ mod tests {
     fn test_verify_new_merkle_tree() {
         let tree_nodes = vec![TreeNode {
             claimant: Pubkey::default(),
+            amount: 2,
             proof: None,
-            total_unlocked_staker: 2,
-            total_locked_staker: 3,
-            total_unlocked_searcher: 4,
-            total_locked_searcher: 5,
-            total_unlocked_validator: 6,
-            total_locked_validator: 7,
         }];
-        let merkle_tree = AirdropMerkleTree::new(tree_nodes).unwrap();
+        let merkle_tree = AirdropMerkleTree::new(tree_nodes, 0).unwrap();
         assert!(merkle_tree.verify_proof().is_ok(), "verify failed");
     }
 
@@ -299,37 +280,22 @@ mod tests {
         let tree_nodes = vec![
             TreeNode {
                 claimant: pubkey!("FLYqJsmJ5AGMxMxK3Qy1rSen4ES2dqqo6h51W3C1tYS"),
+                amount: (100 * u64::pow(10, 9)),
                 proof: None,
-                total_unlocked_staker: (100 * u64::pow(10, 9)),
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
             },
             TreeNode {
                 claimant: pubkey!("EDGARWktv3nDxRYjufjdbZmryqGXceaFPoPpbUzdpqED"),
+                amount: (100 * u64::pow(10, 9)),
                 proof: None,
-                total_unlocked_staker: 100 * u64::pow(10, 9),
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
             },
             TreeNode {
                 claimant: pubkey!("EDGARWktv3nDxRYjufjdbZmryqGXceaFPoPpbUzdpqEH"),
+                amount: (100 * u64::pow(10, 9)),
                 proof: None,
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
             },
         ];
 
-        let merkle_distributor_info = AirdropMerkleTree::new(tree_nodes).unwrap();
+        let merkle_distributor_info = AirdropMerkleTree::new(tree_nodes, 0).unwrap();
         let path = PathBuf::from("merkle_tree.json");
 
         // serialize merkle distributor to file
@@ -343,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_new_test_merkle_tree() {
-        new_test_merkle_tree(100, &PathBuf::from("merkle_tree_test_csv.json"));
+        new_test_merkle_tree(100, &PathBuf::from("merkle_tree_test_csv.json"), 0);
     }
 
     // Test creating a merkle tree from Tree Nodes, where claimants are not unique
@@ -353,44 +319,23 @@ mod tests {
         let tree_nodes = vec![
             TreeNode {
                 claimant: duplicate_pubkey,
+                amount: 10,
                 proof: None,
-                total_unlocked_staker: 10,
-                total_locked_staker: 20,
-                total_unlocked_searcher: 30,
-                total_locked_searcher: 40,
-                total_unlocked_validator: 50,
-                total_locked_validator: 60,
             },
             TreeNode {
                 claimant: duplicate_pubkey,
+                amount: 1,
                 proof: None,
-                total_unlocked_staker: 1,
-                total_locked_staker: 2,
-                total_unlocked_searcher: 3,
-                total_locked_searcher: 4,
-                total_unlocked_validator: 5,
-                total_locked_validator: 6,
             },
             TreeNode {
                 claimant: Pubkey::new_unique(),
+                amount: 0,
                 proof: None,
-                total_unlocked_staker: 0,
-                total_locked_staker: 0,
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
             },
         ];
 
-        let tree = AirdropMerkleTree::new(tree_nodes).unwrap();
-        // Assert that the merkle distributor correctly combines the two tree nodes
+        let tree = AirdropMerkleTree::new(tree_nodes, 0).unwrap();
         assert_eq!(tree.tree_nodes.len(), 2);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_staker, 11);
-        assert_eq!(tree.tree_nodes[0].total_locked_staker, 22);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_searcher, 33);
-        assert_eq!(tree.tree_nodes[0].total_locked_searcher, 44);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_validator, 55);
-        assert_eq!(tree.tree_nodes[0].total_locked_validator, 66);
+        assert_eq!(tree.tree_nodes[0].amount, 11);
     }
 }

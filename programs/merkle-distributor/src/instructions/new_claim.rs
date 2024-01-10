@@ -90,8 +90,13 @@ pub fn handle_new_claim(
     let distributor = &mut ctx.accounts.distributor;
 
     let curr_ts = Clock::get()?.unix_timestamp;
+    let curr_slot = Clock::get()?.slot;
+
     require!(!distributor.clawed_back, ErrorCode::ClaimExpired);
-    require!(distributor.is_enable, ErrorCode::PoolIsDisable);
+    require!(
+        distributor.enable_slot <= curr_slot,
+        ErrorCode::ClaimingIsNotStarted
+    );
 
     distributor.num_nodes_claimed = distributor
         .num_nodes_claimed

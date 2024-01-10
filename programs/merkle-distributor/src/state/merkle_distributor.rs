@@ -37,8 +37,8 @@ pub struct MerkleDistributor {
     pub admin: Pubkey,
     /// Whether or not the distributor has been clawed back
     pub clawed_back: bool,
-    /// whether it is enable to claim
-    pub is_enable: bool,
+    /// this merkle tree is enable from this slot
+    pub enable_slot: u64,
 }
 
 impl MerkleDistributor {

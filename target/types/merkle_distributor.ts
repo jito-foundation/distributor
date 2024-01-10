@@ -71,10 +71,11 @@ export type MerkleDistributor = {
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "Token vault"
+            "Token vault",
+            "Should create previously"
           ]
         },
         {
@@ -144,11 +145,18 @@ export type MerkleDistributor = {
         {
           "name": "clawbackStartTs",
           "type": "i64"
+        },
+        {
+          "name": "enableSlot",
+          "type": "u64"
         }
       ]
     },
     {
-      "name": "enablePool",
+      "name": "closeDistributor",
+      "docs": [
+        "only available in test phase"
+      ],
       "accounts": [
         {
           "name": "distributor",
@@ -158,7 +166,16 @@ export type MerkleDistributor = {
             "[MerkleDistributor]."
           ],
           "relations": [
-            "admin"
+            "admin",
+            "token_vault"
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Clawback receiver token account"
           ]
         },
         {
@@ -166,14 +183,31 @@ export type MerkleDistributor = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "Payer to create the distributor."
+            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also has the authority to set the clawback receiver and change itself."
+          ]
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "account receive token back"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [Token] program."
           ]
         }
       ],
       "args": []
     },
     {
-      "name": "disablePool",
+      "name": "setEnableSlot",
       "accounts": [
         {
           "name": "distributor",
@@ -195,7 +229,12 @@ export type MerkleDistributor = {
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "enableSlot",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "newClaim",
@@ -649,11 +688,11 @@ export type MerkleDistributor = {
             "type": "bool"
           },
           {
-            "name": "isEnable",
+            "name": "enableSlot",
             "docs": [
-              "whether it is enable to claim"
+              "this merkle tree is enable from this slot"
             ],
-            "type": "bool"
+            "type": "u64"
           }
         ]
       }
@@ -784,8 +823,13 @@ export type MerkleDistributor = {
     },
     {
       "code": 6018,
-      "name": "PoolIsDisable",
-      "msg": "Pool is disable"
+      "name": "ClaimingIsNotStarted",
+      "msg": "Claiming is not started"
+    },
+    {
+      "code": 6019,
+      "name": "CannotCloseDistributor",
+      "msg": "Cannot close distributor"
     }
   ]
 };
@@ -863,10 +907,11 @@ export const IDL: MerkleDistributor = {
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "Token vault"
+            "Token vault",
+            "Should create previously"
           ]
         },
         {
@@ -936,11 +981,18 @@ export const IDL: MerkleDistributor = {
         {
           "name": "clawbackStartTs",
           "type": "i64"
+        },
+        {
+          "name": "enableSlot",
+          "type": "u64"
         }
       ]
     },
     {
-      "name": "enablePool",
+      "name": "closeDistributor",
+      "docs": [
+        "only available in test phase"
+      ],
       "accounts": [
         {
           "name": "distributor",
@@ -950,7 +1002,16 @@ export const IDL: MerkleDistributor = {
             "[MerkleDistributor]."
           ],
           "relations": [
-            "admin"
+            "admin",
+            "token_vault"
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Clawback receiver token account"
           ]
         },
         {
@@ -958,14 +1019,31 @@ export const IDL: MerkleDistributor = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "Payer to create the distributor."
+            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also has the authority to set the clawback receiver and change itself."
+          ]
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "account receive token back"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [Token] program."
           ]
         }
       ],
       "args": []
     },
     {
-      "name": "disablePool",
+      "name": "setEnableSlot",
       "accounts": [
         {
           "name": "distributor",
@@ -987,7 +1065,12 @@ export const IDL: MerkleDistributor = {
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "enableSlot",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "newClaim",
@@ -1441,11 +1524,11 @@ export const IDL: MerkleDistributor = {
             "type": "bool"
           },
           {
-            "name": "isEnable",
+            "name": "enableSlot",
             "docs": [
-              "whether it is enable to claim"
+              "this merkle tree is enable from this slot"
             ],
-            "type": "bool"
+            "type": "u64"
           }
         ]
       }
@@ -1576,8 +1659,13 @@ export const IDL: MerkleDistributor = {
     },
     {
       "code": 6018,
-      "name": "PoolIsDisable",
-      "msg": "Pool is disable"
+      "name": "ClaimingIsNotStarted",
+      "msg": "Claiming is not started"
+    },
+    {
+      "code": 6019,
+      "name": "CannotCloseDistributor",
+      "msg": "Cannot close distributor"
     }
   ]
 };
