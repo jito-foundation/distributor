@@ -1,10 +1,12 @@
 extern crate jito_merkle_tree;
 extern crate merkle_distributor;
 use std::{
+    collections::HashSet,
     fs,
     ops::Deref,
     path::{Path, PathBuf},
     rc::Rc,
+    str::FromStr,
 };
 
 use anchor_client::{
@@ -96,6 +98,7 @@ pub enum Commands {
 
     CreateTestList(CreateTestListArgs),
     CreateDummyCsv(CreateDummyCsv),
+    ExtendList(ExtendListArgs),
 
     FundAll(FundAllArgs),
     Verify(VerifyArgs),
@@ -201,6 +204,8 @@ pub struct SetEnableSlotArgs {
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
     #[clap(long, env)]
+    pub airdrop_version: Option<u64>,
+    #[clap(long, env)]
     pub slot: u64,
 }
 
@@ -235,6 +240,18 @@ pub struct CreateDummyCsv {
     pub amount: u64,
 }
 
+#[derive(Parser, Debug)]
+pub struct ExtendListArgs {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
+    #[clap(long, env)]
+    pub num_records: u64,
+    #[clap(long, env)]
+    pub amount: u64,
+    #[clap(long, env)]
+    pub destination_path: String,
+}
 fn main() {
     let args = Args::parse();
 
@@ -272,6 +289,9 @@ fn main() {
         }
         Commands::Verify(verfiy_args) => {
             process_verify(&args, verfiy_args);
+        }
+        Commands::ExtendList(extend_list_args) => {
+            process_extend_list(extend_list_args);
         }
     }
 }
@@ -766,6 +786,43 @@ fn process_set_enable_slot(args: &Args, set_enable_slot_args: &SetEnableSlotArgs
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
+    if set_enable_slot_args.airdrop_version.is_some() {
+        let airdrop_version = set_enable_slot_args.airdrop_version.unwrap();
+
+        let (distributor, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, airdrop_version);
+
+        let set_admin_ix = Instruction {
+            program_id: args.program_id,
+            accounts: merkle_distributor::accounts::SetEnableSlot {
+                distributor,
+                admin: keypair.pubkey(),
+            }
+            .to_account_metas(None),
+            data: merkle_distributor::instruction::SetEnableSlot {
+                enable_slot: set_enable_slot_args.slot,
+            }
+            .data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[set_admin_ix],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            client.get_latest_blockhash().unwrap(),
+        );
+
+        let signature = client
+            .send_and_confirm_transaction_with_spinner(&tx)
+            .unwrap();
+
+        println!(
+            "Successfully set enable slot {} airdrop version {} ! signature: {signature:#?}",
+            set_enable_slot_args.slot, airdrop_version
+        );
+        return;
+    }
+
     let mut paths: Vec<_> = fs::read_dir(&set_enable_slot_args.merkle_tree_path)
         .unwrap()
         .map(|r| r.unwrap())
@@ -840,6 +897,9 @@ fn process_set_enable_slot_by_time(
     } else {
         current_slot - (current_time - enable_time) * 1000 / default_slot_time
     };
+
+    println!("slot activate {}", slot);
+    // return;
 
     for file in paths {
         let single_tree_path = file.path();
@@ -926,6 +986,57 @@ fn process_create_dummy_csv(args: &CreateDummyCsv) {
 
     for address in full_list.iter() {
         wtr.write_record(&[address, &args.amount.to_string()])
+            .unwrap();
+    }
+
+    wtr.flush().unwrap();
+}
+
+fn process_extend_list(extend_list_args: &ExtendListArgs) {
+    let community_list = CsvEntry::new_from_file(&extend_list_args.csv_path).unwrap();
+    let test_list: Vec<String> = get_pre_list();
+    let mut pre_list = vec![];
+    for node in community_list.iter() {
+        let addr = Pubkey::from_str(&node.pubkey);
+        if addr.is_err() {
+            println!("{} is not pubkey", node.pubkey);
+            continue;
+        }
+        pre_list.push((addr.unwrap(), node.amount));
+    }
+
+    for node in test_list.iter() {
+        let addr = Pubkey::from_str(&node);
+        if addr.is_err() {
+            println!("{} is not pubkey", node);
+            continue;
+        }
+        pre_list.push((addr.unwrap(), extend_list_args.amount));
+    }
+
+    // remove duplicate
+    pre_list.sort_unstable();
+    pre_list.dedup();
+
+    // // add my key
+    // let pre_list: Vec<String> = get_pre_list();
+    let mut full_list = vec![];
+    for _i in 0..(extend_list_args.num_records - full_list.len() as u64) {
+        full_list.push((Pubkey::new_unique(), extend_list_args.amount));
+    }
+    // // merge with pre_list
+    let num_node = extend_list_args
+        .num_records
+        .checked_div(pre_list.len() as u64)
+        .unwrap() as usize;
+    for (i, address) in pre_list.iter().enumerate() {
+        full_list.insert(num_node * i, address.clone());
+    }
+
+    let mut wtr = Writer::from_path(&extend_list_args.destination_path).unwrap();
+    wtr.write_record(&["pubkey", "amount"]).unwrap();
+    for address in full_list.iter() {
+        wtr.write_record(&[address.0.to_string(), address.1.to_string()])
             .unwrap();
     }
 
