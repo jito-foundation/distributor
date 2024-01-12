@@ -87,7 +87,7 @@ fn get_average_slot_time(client: &RpcClient) -> Result<u64> {
 
     let average_time = total_time / num_samples;
     // sanity check
-    if average_time < DEFAULT_MS_PER_SLOT / 2 && average_time > DEFAULT_MS_PER_SLOT * 2 {
+    if average_time < DEFAULT_MS_PER_SLOT / 2 || average_time > DEFAULT_MS_PER_SLOT * 2 {
         println!("average_time is passed sanity check {}", average_time);
         return Ok(DEFAULT_MS_PER_SLOT);
     }
