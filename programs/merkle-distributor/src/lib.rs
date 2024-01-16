@@ -13,22 +13,10 @@
 #![allow(clippy::too_many_arguments)]
 use anchor_lang::prelude::*;
 use instructions::*;
-use solana_security_txt::security_txt;
 
 pub mod error;
 pub mod instructions;
 pub mod state;
-
-security_txt! {
-    // Required fields
-    name: "Merkle Distributor",
-    project_url: "https://jito.network/",
-    contacts: "email:support@jito.network",
-    policy: "https://github.com/jito-foundation/distributor",
-    // Optional Fields
-    preferred_languages: "en",
-    source_code: "https://github.com/jito-foundation/distributor"
-}
 
 declare_id!("meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb");
 
@@ -82,6 +70,11 @@ pub mod merkle_distributor {
     #[allow(clippy::result_large_err)]
     pub fn close_distributor(ctx: Context<CloseDistributor>) -> Result<()> {
         handle_close_distributor(ctx)
+    }
+    /// only available in test phase
+    #[allow(clippy::result_large_err)]
+    pub fn close_claim_status(ctx: Context<CloseClaimStatus>) -> Result<()> {
+        handle_close_status(ctx)
     }
 
     #[allow(clippy::result_large_err)]

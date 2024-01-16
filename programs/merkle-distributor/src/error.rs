@@ -43,4 +43,6 @@ pub enum ErrorCode {
     ClaimingIsNotStarted,
     #[msg("Cannot close distributor")]
     CannotCloseDistributor,
+    #[msg("Cannot close claim status")]
+    CannotCloseClaimStatus,
 }

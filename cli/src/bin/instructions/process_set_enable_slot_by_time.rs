@@ -34,16 +34,13 @@ pub fn process_set_enable_slot_by_time(
     };
 
     println!("slot activate {}", slot);
-    for file in paths {
-        let single_tree_path = file.path();
 
-        let merkle_tree =
-            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
-
+    if set_enable_slot_by_time_args.airdrop_version.is_some() {
+        let airdrop_version = set_enable_slot_by_time_args.airdrop_version.unwrap();
         let (distributor, _bump) =
-            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+            get_merkle_distributor_pda(&args.program_id, &args.mint, airdrop_version);
 
-        let set_admin_ix = Instruction {
+        let set_slot_ix = Instruction {
             program_id: args.program_id,
             accounts: merkle_distributor::accounts::SetEnableSlot {
                 distributor,
@@ -54,7 +51,44 @@ pub fn process_set_enable_slot_by_time(
         };
 
         let tx = Transaction::new_signed_with_payer(
-            &[set_admin_ix],
+            &[set_slot_ix],
+            Some(&keypair.pubkey()),
+            &[&keypair],
+            client.get_latest_blockhash().unwrap(),
+        );
+
+        let signature = client
+            .send_and_confirm_transaction_with_spinner(&tx)
+            .unwrap();
+
+        println!(
+            "Successfully enable slot {slot} timestamp {} airdrop version {}! signature: {signature:#?}",
+            enable_time,
+            airdrop_version
+        );
+        return;
+    }
+    for file in paths {
+        let single_tree_path = file.path();
+
+        let merkle_tree =
+            AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+
+        let (distributor, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+
+        let set_slot_ix = Instruction {
+            program_id: args.program_id,
+            accounts: merkle_distributor::accounts::SetEnableSlot {
+                distributor,
+                admin: keypair.pubkey(),
+            }
+            .to_account_metas(None),
+            data: merkle_distributor::instruction::SetEnableSlot { enable_slot: slot }.data(),
+        };
+
+        let tx = Transaction::new_signed_with_payer(
+            &[set_slot_ix],
             Some(&keypair.pubkey()),
             &[&keypair],
             client.get_latest_blockhash().unwrap(),
@@ -72,7 +106,7 @@ pub fn process_set_enable_slot_by_time(
     }
 }
 
-fn get_average_slot_time(client: &RpcClient) -> Result<u64> {
+pub fn get_average_slot_time(client: &RpcClient) -> Result<u64> {
     let samples = client.get_recent_performance_samples(Some(60))?;
     let num_samples = samples.len() as u64;
     if num_samples == 0 {

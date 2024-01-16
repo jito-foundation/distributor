@@ -2061,6 +2061,7 @@ dependencies = [
  "csv",
  "jito-merkle-tree",
  "merkle-distributor",
+ "serde",
  "solana-program",
  "solana-rpc-client",
  "solana-sdk",

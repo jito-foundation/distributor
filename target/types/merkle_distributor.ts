@@ -207,6 +207,33 @@ export type MerkleDistributor = {
       "args": []
     },
     {
+      "name": "closeClaimStatus",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "claimStatus",
+          "isMut": true,
+          "isSigner": false,
+          "relations": [
+            "claimant"
+          ]
+        },
+        {
+          "name": "claimant",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "setEnableSlot",
       "accounts": [
         {
@@ -866,6 +893,11 @@ export type MerkleDistributor = {
       "code": 6019,
       "name": "CannotCloseDistributor",
       "msg": "Cannot close distributor"
+    },
+    {
+      "code": 6020,
+      "name": "CannotCloseClaimStatus",
+      "msg": "Cannot close claim status"
     }
   ]
 };
@@ -1079,6 +1111,33 @@ export const IDL: MerkleDistributor = {
       "args": []
     },
     {
+      "name": "closeClaimStatus",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "claimStatus",
+          "isMut": true,
+          "isSigner": false,
+          "relations": [
+            "claimant"
+          ]
+        },
+        {
+          "name": "claimant",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "setEnableSlot",
       "accounts": [
         {
@@ -1738,6 +1797,11 @@ export const IDL: MerkleDistributor = {
       "code": 6019,
       "name": "CannotCloseDistributor",
       "msg": "Cannot close distributor"
+    },
+    {
+      "code": 6020,
+      "name": "CannotCloseClaimStatus",
+      "msg": "Cannot close claim status"
     }
   ]
 };

@@ -14,3 +14,5 @@ pub mod set_admin;
 pub mod set_clawback_receiver;
 pub mod set_enable_slot;
 pub use close_distributor::*;
+pub mod close_claim_status;
+pub use close_claim_status::*;

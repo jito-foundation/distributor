@@ -90,6 +90,7 @@ pub enum Commands {
     /// Create a new instance of a merkle distributor
     NewDistributor(NewDistributorArgs),
     CloseDistributor(CloseDistributorArgs),
+    CloseClaimStatus(CloseClaimStatusArgs),
     /// Clawback tokens from merkle distributor
     #[clap(hide = true)]
     Clawback(ClawbackArgs),
@@ -106,6 +107,8 @@ pub enum Commands {
 
     FundAll(FundAllArgs),
     Verify(VerifyArgs),
+    FilterList(FilterListArgs),
+    SlotByTime(SlotByTimeArgsArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -116,6 +119,9 @@ pub struct CloseDistributorArgs {
     #[clap(long, env)]
     pub airdrop_version: Option<u64>,
 }
+
+#[derive(Parser, Debug)]
+pub struct CloseClaimStatusArgs {}
 // NewClaim and Claim subcommand args
 #[derive(Parser, Debug)]
 pub struct ClaimArgs {
@@ -220,6 +226,14 @@ pub struct SetEnableSlotByTimeArgs {
     pub merkle_tree_path: PathBuf,
     #[clap(long, env)]
     pub timestamp: u64,
+    #[clap(long, env)]
+    pub airdrop_version: Option<u64>,
+}
+
+#[derive(Parser, Debug)]
+pub struct SlotByTimeArgsArgs {
+    #[clap(long, env)]
+    pub timestamp: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -251,6 +265,17 @@ pub struct ExtendListArgs {
     pub csv_path: PathBuf,
     #[clap(long, env)]
     pub num_records: u64,
+    #[clap(long, env)]
+    pub amount: u64,
+    #[clap(long, env)]
+    pub destination_path: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct FilterListArgs {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
     #[clap(long, env)]
     pub amount: u64,
     #[clap(long, env)]
@@ -296,6 +321,15 @@ fn main() {
         }
         Commands::ExtendList(extend_list_args) => {
             process_extend_list(extend_list_args);
+        }
+        Commands::FilterList(filter_list_args) => {
+            process_filter_list(filter_list_args);
+        }
+        Commands::SlotByTime(slot_by_time_args) => {
+            process_get_slot(&args, slot_by_time_args);
+        }
+        Commands::CloseClaimStatus(_args) => {
+            process_close_claim_status(&args);
         }
     }
 }
@@ -371,6 +405,7 @@ fn get_pre_list() -> Vec<String> {
         "4zvTjdpyr3SAgLeSpCnq4KaHvX2j5SbkwxYydzbfqhRQ",
         "EVfUfs9XNwJmfNvoazDbZVb6ecnGCxgQrJzsCQHoQ4q7",
         "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
+        "HAPdsaZFfQDG4bD8vzBbPCUawUWKSJxvhQ7TGg1BeAxZ",
     ];
     let list: Vec<String> = list.iter().map(|x| x.to_string()).collect();
     list

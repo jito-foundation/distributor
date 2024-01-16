@@ -3,9 +3,6 @@ name = "merkle-distributor"
 version = "0.0.1"
 description = "A Solana program for distributing tokens according to a Merkle root."
 edition = "2021"
-repository = "https://github.com/jito-foundation/governance"
-authors = ["Jito Foundation <team@jito.network>"]
-license = "GPL-3.0"
 
 [lib]
 crate-type = ["cdylib", "lib"]
