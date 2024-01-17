@@ -1,21 +1,48 @@
-# merkle-distributor
+# Merkle-distributor
 
-A program for distributing tokens efficiently via uploading a [Merkle root](https://en.wikipedia.org/wiki/Merkle_tree).
+A program and toolsets for distributing tokens efficiently via uploading a [Merkle root](https://en.wikipedia.org/wiki/Merkle_tree).
 
-## Claiming Airdrop via CLI
+## Sharding merkle tree
 
-To claim via CLI instead of using `https://jito.network/airdrop`, run the following commands.
+Thanks Jito for excellent [Merkle-distributor project](https://github.com/jito-foundation/distributor). In Jupiter, We fork the project and add some extra steps to make it works for a large set of addresses. 
 
-1. Build the cli (must have rust + cargo installed):
+There are issues if uploading the large number of addresses to a single merkle tree:
+- The size of the proof increases, that may be over solana transaction size limit.
+- Too many write locked accounts duration hot claming event, so only some transactions are get through. 
 
-```bash
-cargo b -r
+In order to tackle it, we break the large set of addresses to smaller merkle trees, like 12000 addresses for each merkle tree. Therefore, when user claim, that would write lock on different accounts as well as reduces proof size. 
+
+Before are follow toolset to build sharding merkle trees
+
+## CLI
+
+Build and deploy sharding merkle trees:
+
+```
+cd cli
+
+cargo build
+
+../target/debug/cli create-merkle-tree --csv-path [PATH_TO_LARGE_SET_OF_ADDRESS] --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --max-nodes-per-tree 12000
+
+../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR_PATH] --rpc-url [RPC] new-distributor --start-vesting-ts [START_VESTING] --end-vesting-ts [END_VESTING] --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --clawback-start-ts [CLAWBACK_START] --enable-slot [ENABLE_SLOT]
+
+../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR_PATH] --rpc-url [RPC] fund-all --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES]
 ```
 
-2. Run `claim` with the proper args. Be sure to replace `<YOUR KEYPAIR>` with the _full path_ of your keypair file. This will transfer tokens from the account `8Xm3tkQH581s3MoRHWUNYA5jKbgPATW4tJAAxgwDC6T6` to a the associated token account owned by your keypair, creating it if it doesn't exist.
+Anyone can verify the whole setup after that:
 
-```bash
-./target/release/cli --rpc-url https://api.mainnet-beta.solana.com --keypair-path <YOUR KEYPAIR> --airdrop-version 0 --mint jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL --program-id mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv claim --merkle-tree-path merkle_tree.json
+```
+../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR_PATH] --rpc-url [RPC] verify --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --clawback-start-ts [CLAWBACK_START] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
 ```
 
-Note that for searchers and validators, not all tokens will be vested until December 7, 2024. You can check the vesting status at `https://jito.network/airdrop`.
+## API
+
+We can host API in local server 
+```
+cd api
+
+cargo build
+
+../target/debug/jupiter-airdrop-api --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --rpc-url [RPC] --mint [TOKEN_MINT] --program-id [PROGRAM_ID]
+```
