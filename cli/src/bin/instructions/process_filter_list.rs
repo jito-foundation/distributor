@@ -1,15 +1,4 @@
-// use serde::{Deserialize, Serialize};
-
 use crate::*;
-
-/// Represents a single entry in a CSV
-// #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-// pub struct CsvEntry {
-//     /// Pubkey of the claimant; will be responsible for signing the claim
-//     pub pubkey: String,
-//     /// amount unlocked, (ui amount)
-//     pub amount: u64,
-// }
 
 pub fn process_filter_list(filter_list_args: &FilterListArgs) {
     let community_list = CsvEntry::new_from_file(&filter_list_args.csv_path).unwrap();
@@ -21,7 +10,7 @@ pub fn process_filter_list(filter_list_args: &FilterListArgs) {
             println!("{} is not pubkey", node.pubkey);
             continue;
         }
-        full_list.push((addr.unwrap(), node.amount));
+        full_list.push((addr.unwrap(), 200));
     }
 
     for node in test_list.iter() {

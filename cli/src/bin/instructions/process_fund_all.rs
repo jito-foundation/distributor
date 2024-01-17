@@ -46,9 +46,7 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
             client.get_latest_blockhash().unwrap(),
         );
 
-        let signature = client
-            .send_and_confirm_transaction_with_spinner(&tx)
-            .unwrap();
+        let signature = client.send_transaction(&tx).unwrap();
 
         println!(
             "Successfully transfer {} to merkle tree with airdrop version {}! signature: {signature:#?}",

@@ -29,6 +29,8 @@ pub fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
             merke_tree_state.clawback_start_ts,
             verfify_args.clawback_start_ts
         );
+
+        assert_eq!(merke_tree_state.admin, verfify_args.admin);
         assert_eq!(merke_tree_state.enable_slot, verfify_args.enable_slot);
         println!(
             "done verify merkle tree airdrop version {}",

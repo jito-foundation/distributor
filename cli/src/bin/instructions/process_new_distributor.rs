@@ -102,31 +102,47 @@ pub fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributo
         // See comments on new_distributor instruction inside the program to ensure this transaction
         // didn't get frontrun.
         // If this fails, make sure to run it again.
-        match client.send_and_confirm_transaction_with_spinner(&tx) {
-            Ok(_) => {
-                println!(
-                    "done create merkle distributor version {} {:?}",
-                    merkle_tree.airdrop_version,
-                    tx.get_signature(),
-                );
-            }
-            Err(e) => {
-                println!("Failed to create MerkleDistributor: {:?}", e);
 
-                // double check someone didn't frontrun this transaction with a malicious merkle root
-                if let Some(account) = client
-                    .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::processed())
-                    .unwrap()
-                    .value
-                {
-                    check_distributor_onchain_matches(
-                    &account,
-                    &merkle_tree,
-                    new_distributor_args,
-                    keypair.pubkey(),
-                    args,
-                ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
+        if new_distributor_args.skip_verify {
+            match client.send_transaction(&tx) {
+                Ok(_) => {
+                    println!(
+                        "done create merkle distributor version {} {:?}",
+                        merkle_tree.airdrop_version,
+                        tx.get_signature(),
+                    );
                 }
+                Err(e) => {
+                    println!("Failed to create MerkleDistributor: {:?}", e);
+                }
+            }
+        } else {
+            match client.send_and_confirm_transaction_with_spinner(&tx) {
+                Ok(_) => {
+                    println!(
+                        "done create merkle distributor version {} {:?}",
+                        merkle_tree.airdrop_version,
+                        tx.get_signature(),
+                    );
+                }
+                Err(e) => {
+                    println!("Failed to create MerkleDistributor: {:?}", e);
+                }
+            }
+
+            // double check someone didn't frontrun this transaction with a malicious merkle root
+            if let Some(account) = client
+                .get_account_with_commitment(&distributor_pubkey, CommitmentConfig::processed())
+                .unwrap()
+                .value
+            {
+                check_distributor_onchain_matches(
+                  &account,
+                  &merkle_tree,
+                  new_distributor_args,
+                  keypair.pubkey(),
+                  args,
+              ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
             }
         }
 

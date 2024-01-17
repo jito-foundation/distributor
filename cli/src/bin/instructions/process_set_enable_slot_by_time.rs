@@ -107,7 +107,7 @@ pub fn process_set_enable_slot_by_time(
 }
 
 pub fn get_average_slot_time(client: &RpcClient) -> Result<u64> {
-    let samples = client.get_recent_performance_samples(Some(60))?;
+    let samples = client.get_recent_performance_samples(Some(720))?;
     let num_samples = samples.len() as u64;
     if num_samples == 0 {
         println!("num sample is zero, use default time");

@@ -14,6 +14,7 @@ pub fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestL
         csv_path: create_test_list_args.csv_path.clone(),
         merkle_tree_path: create_test_list_args.merkle_tree_path.clone(),
         max_nodes_per_tree: 10000,
+        should_include_test_list: false,
     };
     process_create_merkle_tree(merkle_tree_args);
 }

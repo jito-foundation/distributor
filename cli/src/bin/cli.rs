@@ -149,6 +149,9 @@ pub struct VerifyArgs {
 
     #[clap(long, env)]
     pub enable_slot: u64,
+
+    #[clap(long, env)]
+    pub admin: Pubkey,
 }
 
 // NewDistributor subcommand args
@@ -175,6 +178,9 @@ pub struct NewDistributorArgs {
 
     #[clap(long, env)]
     pub airdrop_version: Option<u64>,
+
+    #[clap(long, env)]
+    pub skip_verify: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -198,6 +204,9 @@ pub struct CreateMerkleTreeArgs {
     /// max nodes per tree
     #[clap(long, env)]
     pub max_nodes_per_tree: u64,
+
+    #[clap(long, env)]
+    pub should_include_test_list: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -406,6 +415,20 @@ fn get_pre_list() -> Vec<String> {
         "EVfUfs9XNwJmfNvoazDbZVb6ecnGCxgQrJzsCQHoQ4q7",
         "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
         "HAPdsaZFfQDG4bD8vzBbPCUawUWKSJxvhQ7TGg1BeAxZ",
+    ];
+    let list: Vec<String> = list.iter().map(|x| x.to_string()).collect();
+    list
+}
+
+fn get_test_list() -> Vec<String> {
+    let list = vec![
+        "4zvTjdpyr3SAgLeSpCnq4KaHvX2j5SbkwxYydzbfqhRQ",
+        "Dxjob4xGmVXM49L8xNct5GTJrqyTiTqm6aLTftdZuCE5",
+        "D7PY6TzZRiNJwcZKaQStjjpU3KcfP6kVhrV69wrrgUXG",
+        "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
+        "6HQeT87Qgh8TkZPJVcbkZh8bQ3gW2st7ZJin8xEkvdWh",
+        "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",
+        "BULRqL3U2jPgwvz6HYCyBVq9BMtK94Y1Nz98KQop23aD",
     ];
     let list: Vec<String> = list.iter().map(|x| x.to_string()).collect();
     list

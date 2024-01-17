@@ -1,4 +1,5 @@
 use merkle_distributor::state::claim_status::ClaimStatus;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 
 use crate::*;
 
@@ -10,7 +11,7 @@ pub fn process_close_claim_status(args: &Args) {
         .expect("Failed reading keypair file");
     println!("num accounts {}", claim_status_accounts.len());
 
-    let numer_of_close_ix_per_transaction = 10;
+    let numer_of_close_ix_per_transaction = 11;
     let mut claim_status_accounts_iter = claim_status_accounts.iter();
     let mut current_status_account = claim_status_accounts_iter.next();
 
@@ -38,7 +39,7 @@ pub fn process_close_claim_status(args: &Args) {
                     &[&keypair],
                     blockhash,
                 );
-                match client.send_and_confirm_transaction_with_spinner(&tx) {
+                match client.send_transaction(&tx) {
                     Ok(_) => {
                         println!("done close claim status {}", tx.get_signature());
                         close_ixs = vec![];

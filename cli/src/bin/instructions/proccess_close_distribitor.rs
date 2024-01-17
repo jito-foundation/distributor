@@ -56,7 +56,7 @@ pub fn process_close_distributor(args: &Args, close_distributor_args: &CloseDist
             &[&keypair],
             blockhash,
         );
-        match client.send_and_confirm_transaction_with_spinner(&tx) {
+        match client.send_transaction(&tx) {
             Ok(_) => {
                 println!(
                     "done close merkle distributor version {} {:?}",
