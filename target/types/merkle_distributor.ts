@@ -149,6 +149,10 @@ export type MerkleDistributor = {
         {
           "name": "enableSlot",
           "type": "u64"
+        },
+        {
+          "name": "closable",
+          "type": "bool"
         }
       ]
     },
@@ -217,7 +221,8 @@ export type MerkleDistributor = {
           "isMut": true,
           "isSigner": false,
           "relations": [
-            "claimant"
+            "claimant",
+            "admin"
           ]
         },
         {
@@ -592,6 +597,20 @@ export type MerkleDistributor = {
               "Unlocked amount"
             ],
             "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this account, for testing purpose"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "admin",
+            "docs": [
+              "admin of merkle tree, store for for testing purpose"
+            ],
+            "type": "publicKey"
           }
         ]
       }
@@ -720,6 +739,13 @@ export type MerkleDistributor = {
               "this merkle tree is enable from this slot"
             ],
             "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this pool, for testing purpose"
+            ],
+            "type": "bool"
           },
           {
             "name": "buffer0",
@@ -1053,6 +1079,10 @@ export const IDL: MerkleDistributor = {
         {
           "name": "enableSlot",
           "type": "u64"
+        },
+        {
+          "name": "closable",
+          "type": "bool"
         }
       ]
     },
@@ -1121,7 +1151,8 @@ export const IDL: MerkleDistributor = {
           "isMut": true,
           "isSigner": false,
           "relations": [
-            "claimant"
+            "claimant",
+            "admin"
           ]
         },
         {
@@ -1496,6 +1527,20 @@ export const IDL: MerkleDistributor = {
               "Unlocked amount"
             ],
             "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this account, for testing purpose"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "admin",
+            "docs": [
+              "admin of merkle tree, store for for testing purpose"
+            ],
+            "type": "publicKey"
           }
         ]
       }
@@ -1624,6 +1669,13 @@ export const IDL: MerkleDistributor = {
               "this merkle tree is enable from this slot"
             ],
             "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this pool, for testing purpose"
+            ],
+            "type": "bool"
           },
           {
             "name": "buffer0",

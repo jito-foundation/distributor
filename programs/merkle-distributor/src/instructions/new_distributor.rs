@@ -78,6 +78,7 @@ pub fn handle_new_distributor(
     end_vesting_ts: i64,
     clawback_start_ts: i64,
     enable_slot: u64,
+    closable: bool,
 ) -> Result<()> {
     let curr_ts = Clock::get()?.unix_timestamp;
 
@@ -123,6 +124,7 @@ pub fn handle_new_distributor(
     distributor.admin = ctx.accounts.admin.key();
     distributor.clawed_back = false;
     distributor.enable_slot = enable_slot;
+    distributor.closable = closable;
 
     // Note: might get truncated, do not rely on
     msg! {

@@ -10,6 +10,7 @@ use jito_merkle_verify::verify;
 
 use crate::{
     error::ErrorCode,
+    merkle_distributor,
     state::{
         claim_status::ClaimStatus, claimed_event::NewClaimEvent,
         merkle_distributor::MerkleDistributor,
@@ -132,6 +133,8 @@ pub fn handle_new_claim(
     claim_status.locked_amount = amount_locked;
     claim_status.unlocked_amount = amount_unlocked;
     claim_status.locked_amount_withdrawn = 0;
+    claim_status.closable = distributor.closable;
+    claim_status.admin = distributor.admin;
 
     let seeds = [
         b"MerkleDistributor".as_ref(),

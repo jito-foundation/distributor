@@ -53,6 +53,7 @@ pub mod merkle_distributor {
         end_vesting_ts: i64,
         clawback_start_ts: i64,
         enable_slot: u64,
+        closable: bool,
     ) -> Result<()> {
         handle_new_distributor(
             ctx,
@@ -64,6 +65,7 @@ pub mod merkle_distributor {
             end_vesting_ts,
             clawback_start_ts,
             enable_slot,
+            closable,
         )
     }
     /// only available in test phase

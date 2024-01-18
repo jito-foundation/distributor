@@ -11,6 +11,7 @@ pub struct CloseDistributor<'info> {
         mut,
         has_one = admin,
         has_one = token_vault,
+        constraint = distributor.closable @ ErrorCode::CannotCloseDistributor,
         close = admin
     )]
     pub distributor: Account<'info, MerkleDistributor>,
@@ -33,7 +34,6 @@ pub struct CloseDistributor<'info> {
 }
 
 #[allow(clippy::result_large_err)]
-#[cfg(feature = "test")]
 pub fn handle_close_distributor(ctx: Context<CloseDistributor>) -> Result<()> {
     let distributor = &ctx.accounts.distributor;
     let seeds = [
@@ -56,10 +56,4 @@ pub fn handle_close_distributor(ctx: Context<CloseDistributor>) -> Result<()> {
         ctx.accounts.token_vault.amount,
     )?;
     Ok(())
-}
-
-#[allow(clippy::result_large_err)]
-#[cfg(not(feature = "test"))]
-pub fn handle_close_distributor(ctx: Context<CloseDistributor>) -> Result<()> {
-    return Err(ErrorCode::CannotCloseDistributor.into());
 }

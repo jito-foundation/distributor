@@ -39,6 +39,8 @@ pub struct MerkleDistributor {
     pub clawed_back: bool,
     /// this merkle tree is enable from this slot
     pub enable_slot: u64,
+    /// indicate that whether admin can close this pool, for testing purpose
+    pub closable: bool,
     /// Buffer 0
     pub buffer_0: [u8; 32],
     /// Buffer 1

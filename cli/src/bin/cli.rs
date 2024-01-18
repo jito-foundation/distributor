@@ -152,6 +152,9 @@ pub struct VerifyArgs {
 
     #[clap(long, env)]
     pub admin: Pubkey,
+
+    #[clap(long, env)]
+    pub closable: bool,
 }
 
 // NewDistributor subcommand args
@@ -178,6 +181,9 @@ pub struct NewDistributorArgs {
 
     #[clap(long, env)]
     pub airdrop_version: Option<u64>,
+
+    #[clap(long, env)]
+    pub closable: bool,
 
     #[clap(long, env)]
     pub skip_verify: bool,
@@ -373,6 +379,10 @@ fn check_distributor_onchain_matches(
 
         if distributor.enable_slot != new_distributor_args.enable_slot {
             return Err("enable_slot mismatch");
+        }
+
+        if distributor.closable != new_distributor_args.closable {
+            return Err("closable mismatch");
         }
 
         // TODO fix code

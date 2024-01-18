@@ -87,6 +87,7 @@ pub fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributo
                 end_vesting_ts: new_distributor_args.end_vesting_ts,
                 clawback_start_ts: new_distributor_args.clawback_start_ts,
                 enable_slot: new_distributor_args.enable_slot,
+                closable: new_distributor_args.closable,
             }
             .data(),
         });
