@@ -32,3 +32,7 @@ pub mod process_get_slot;
 pub use process_get_slot::*;
 pub mod process_close_claim_status;
 pub use process_close_claim_status::*;
+pub mod process_filter_and_merge;
+pub use process_filter_and_merge::*;
+pub mod process_generate_kv_proof;
+pub use process_generate_kv_proof::*;

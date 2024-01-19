@@ -30,10 +30,6 @@ pub struct Args {
     #[clap(long, env)]
     merkle_tree_path: PathBuf,
 
-    /// RPC url
-    #[clap(long, env)]
-    rpc_url: String,
-
     /// Mint address of token in question
     #[clap(long, env)]
     mint: Pubkey,
@@ -48,14 +44,11 @@ pub struct Args {
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    tracing_subscriber::fmt().init();
+    // tracing_subscriber::fmt().init();
 
-    info!("args: {:?}", args);
+    println!("args: {:?}", args);
 
-    info!("starting server at {}", args.bind_addr);
-
-    let rpc_client = RpcClient::new(args.rpc_url.clone());
-    info!("started rpc client at {}", args.rpc_url);
+    println!("starting server at {}", args.bind_addr);
 
     let mut paths: Vec<_> = fs::read_dir(&args.merkle_tree_path)
         .unwrap()
@@ -95,6 +88,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         thread::sleep(one_sec);
     }
 
+    println!("Done all tree");
+
     distributors.sort_unstable_by(|a, b| a.airdrop_version.cmp(&b.airdrop_version));
 
     let state = Arc::new(RouterState {
@@ -105,7 +100,6 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         },
         tree,
         program_id: args.program_id,
-        rpc_client,
     });
 
     let app = router::get_routes(state);

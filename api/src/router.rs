@@ -33,7 +33,6 @@ use crate::{error, error::ApiError, Result};
 
 pub struct RouterState {
     pub program_id: Pubkey,
-    pub rpc_client: RpcClient,
     pub distributors: Distributors,
     pub tree: HashMap<Pubkey, (Pubkey, TreeNode)>,
 }
@@ -43,7 +42,6 @@ impl Debug for RouterState {
         f.debug_struct("RouterState")
             .field("program_id", &self.program_id)
             .field("tree", &self.tree.len())
-            .field("rpc_client", &self.rpc_client.url())
             .finish()
     }
 }
@@ -52,7 +50,7 @@ impl Debug for RouterState {
 pub fn get_routes(state: Arc<RouterState>) -> Router {
     let middleware = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(error::handle_error))
-        .layer(BufferLayer::new(1000))
+        .layer(BufferLayer::new(10000))
         .layer(RateLimitLayer::new(10000, Duration::from_secs(1)))
         .layer(TimeoutLayer::new(Duration::from_secs(20)))
         .layer(LoadShedLayer::new())
@@ -63,12 +61,12 @@ pub fn get_routes(state: Arc<RouterState>) -> Router {
                 })
                 .on_response(
                     DefaultOnResponse::new()
-                        .level(tracing_core::Level::INFO)
+                        .level(tracing_core::Level::ERROR)
                         .latency_unit(LatencyUnit::Millis),
                 ),
         );
 
-    let mut router = Router::new()
+    let router = Router::new()
         .route("/", get(root))
         .route("/distributors", get(get_distributors))
         .route("/user/:user_pubkey", get(get_user_info));
@@ -92,7 +90,6 @@ async fn get_user_info(
     let proof = Proof {
         merkle_tree: node.0.to_string(),
         amount: node.1.amount(),
-        // amount_unlocked: node.amount_unlocked(),
         proof: node
             .1
             .proof
@@ -133,4 +130,50 @@ struct Proof {
     pub merkle_tree: String,
     pub amount: u64,
     pub proof: Vec<[u8; 32]>,
+}
+
+#[cfg(test)]
+mod router_test {
+    use std::{collections::HashMap, time, time::Instant};
+
+    use futures::future::join_all;
+    use hyper::{Body, Client, Method, Request};
+    use hyper_tls::HttpsConnector;
+    use solana_sdk::pubkey::Pubkey;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_parallel_request() {
+        let url = format!("http://localhost:7001/user/1111sU1sYbe2QWn1rNjUFziHmj6R8Xdt7tj2Q2RFaM",);
+
+        let https = HttpsConnector::new();
+        let client = Client::builder().build::<_, hyper::Body>(https);
+
+        let now = time::Instant::now();
+        let mut handles = vec![];
+        for _i in 0..10_000 {
+            handles.push(async {
+                let result = client.get(url.parse().unwrap()).await;
+                match result {
+                    Ok(response) => response.status().as_u16() == 200,
+                    Err(_) => false,
+                }
+            });
+        }
+        let outputs = join_all(handles).await;
+
+        let mut successes = 0u64;
+        let mut failures = 0u64;
+        for is_ok in outputs {
+            if is_ok {
+                successes += 1;
+            } else {
+                failures += 1;
+            }
+        }
+        println!("handle all request took {:.2?}", now.elapsed());
+        println!("success: {}, failures: {}", successes, failures);
+        assert_eq!(0, failures);
+    }
 }

@@ -108,7 +108,10 @@ pub enum Commands {
     FundAll(FundAllArgs),
     Verify(VerifyArgs),
     FilterList(FilterListArgs),
+    FilterAndMergeList(FilterAndMergeListArgs),
     SlotByTime(SlotByTimeArgsArgs),
+    /// generate kv proof
+    GenerateKvProof(GenerateKvProofArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -296,6 +299,31 @@ pub struct FilterListArgs {
     #[clap(long, env)]
     pub destination_path: String,
 }
+
+#[derive(Parser, Debug)]
+pub struct FilterAndMergeListArgs {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
+    #[clap(long, env)]
+    pub sub_path: PathBuf,
+    #[clap(long, env)]
+    pub amount: u64,
+    #[clap(long, env)]
+    pub destination_path: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct GenerateKvProofArgs {
+    /// Merkle tree out path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+    #[clap(long, env)]
+    pub kv_path: PathBuf,
+    #[clap(long, env)]
+    pub max_entries_per_file: u64,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -345,6 +373,12 @@ fn main() {
         }
         Commands::CloseClaimStatus(_args) => {
             process_close_claim_status(&args);
+        }
+        Commands::FilterAndMergeList(filter_and_merge_list_args) => {
+            process_filter_and_merge(filter_and_merge_list_args);
+        }
+        Commands::GenerateKvProof(generate_kv_proof_args) => {
+            process_generate_kv_proof(&args, generate_kv_proof_args);
         }
     }
 }
