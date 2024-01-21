@@ -19,6 +19,15 @@ use crate::{
     utils::{get_max_total_claim, get_proof},
 };
 
+// proof struct
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserProof {
+    // merkle tree that user belongs
+    pub merkle_tree: String,
+    pub amount: u64,
+    pub proof: Vec<[u8; 32]>,
+}
+
 // We need to discern between leaf and intermediate nodes to prevent trivial second
 // pre-image attacks.
 // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack

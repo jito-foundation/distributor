@@ -10,7 +10,7 @@ pub fn process_filter_list(filter_list_args: &FilterListArgs) {
             println!("{} is not pubkey", node.pubkey);
             continue;
         }
-        full_list.push((addr.unwrap(), 200));
+        full_list.push((addr.unwrap(), filter_list_args.amount));
     }
 
     for node in test_list.iter() {

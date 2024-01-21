@@ -36,3 +36,7 @@ pub mod process_filter_and_merge;
 pub use process_filter_and_merge::*;
 pub mod process_generate_kv_proof;
 pub use process_generate_kv_proof::*;
+pub mod process_send;
+pub use process_send::*;
+pub mod verify_kv_proof;
+pub use verify_kv_proof::*;

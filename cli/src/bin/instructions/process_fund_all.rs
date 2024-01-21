@@ -20,6 +20,7 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
             AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
         let (distributor_pubkey, _bump) =
             get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
+
         let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
 
         let token_vault_state: TokenAccount = program.account(token_vault).unwrap();

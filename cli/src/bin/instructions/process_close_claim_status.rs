@@ -3,6 +3,21 @@ use merkle_distributor::state::claim_status::ClaimStatus;
 
 use crate::*;
 
+pub fn view_claim_status(args: &Args) {
+    let program = args.get_program_client();
+    let claim_status_accounts: Vec<(Pubkey, ClaimStatus)> = program
+        .accounts(vec![
+            RpcFilterType::DataSize((ClaimStatus::LEN) as u64),
+            RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                8 + 32 + 8 + 8 + 8,
+                u8::from(true).to_le_bytes().to_vec(),
+            )),
+        ])
+        .unwrap();
+
+    println!("num account {}", claim_status_accounts.len());
+}
+
 pub fn process_close_claim_status(args: &Args) {
     let program = args.get_program_client();
     let claim_status_accounts: Vec<(Pubkey, ClaimStatus)> = program
@@ -14,6 +29,9 @@ pub fn process_close_claim_status(args: &Args) {
             )),
         ])
         .unwrap();
+
+    println!("num account {}", claim_status_accounts.len());
+
     let keypair = read_keypair_file(&args.keypair_path.clone().unwrap())
         .expect("Failed reading keypair file");
     println!("num accounts {}", claim_status_accounts.len());

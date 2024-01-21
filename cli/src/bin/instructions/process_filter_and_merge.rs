@@ -1,6 +1,6 @@
 use crate::{fs::File, *};
 
-fn parse_new_record(path: &PathBuf) -> Result<Vec<String>> {
+pub fn parse_new_record(path: &PathBuf) -> Result<Vec<String>> {
     let file = File::open(path)?;
     let mut rdr = csv::Reader::from_reader(file);
 

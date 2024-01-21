@@ -112,6 +112,11 @@ pub enum Commands {
     SlotByTime(SlotByTimeArgsArgs),
     /// generate kv proof
     GenerateKvProof(GenerateKvProofArgs),
+    MassSend(MassSendArgs),
+    Resend(ResendSendArgs),
+    ViewClaimStatus(ViewClaimStatusArgs),
+
+    VerifyKvProof(VerifyKvProofArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -324,6 +329,45 @@ pub struct GenerateKvProofArgs {
     pub max_entries_per_file: u64,
 }
 
+#[derive(Parser, Debug)]
+pub struct MassSendArgs {
+    /// CSV path
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
+    /// CSV path
+    #[clap(long, env)]
+    pub des_path: PathBuf,
+    #[clap(long, env)]
+    pub max_address_per_tx: u64,
+}
+
+#[derive(Parser, Debug)]
+pub struct ResendSendArgs {
+    #[clap(long, env)]
+    pub des_path: PathBuf,
+    #[clap(long, env)]
+    pub max_address_per_tx: u64,
+}
+
+#[derive(Parser, Debug)]
+pub struct ViewClaimStatusArgs {}
+
+#[derive(Parser, Debug)]
+pub struct VerifyKvProofArgs {
+    /// list of all user and allocation
+    #[clap(long, env)]
+    pub csv_path: PathBuf,
+    /// kv endpoint
+    #[clap(long, env)]
+    pub kv_api: String,
+    /// local api
+    #[clap(long, env)]
+    pub local_api: String,
+    /// number of entries to verify
+    #[clap(long, env)]
+    pub num_verify: u64,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -380,6 +424,10 @@ fn main() {
         Commands::GenerateKvProof(generate_kv_proof_args) => {
             process_generate_kv_proof(&args, generate_kv_proof_args);
         }
+        Commands::MassSend(mass_send_args) => process_mass_send(&args, mass_send_args),
+        Commands::Resend(re_send_args) => process_resend(&args, re_send_args),
+        Commands::ViewClaimStatus(_view_claim_status_args) => view_claim_status(&args),
+        Commands::VerifyKvProof(verify_kv_proof_args) => verify_kv_proof(verify_kv_proof_args),
     }
 }
 
@@ -468,7 +516,6 @@ fn get_test_list() -> Vec<String> {
     let list = vec![
         "4zvTjdpyr3SAgLeSpCnq4KaHvX2j5SbkwxYydzbfqhRQ",
         "Dxjob4xGmVXM49L8xNct5GTJrqyTiTqm6aLTftdZuCE5",
-        "D7PY6TzZRiNJwcZKaQStjjpU3KcfP6kVhrV69wrrgUXG",
         "GMtwcuktJfrRcnyGktWW4Vab8cfjPcBy3xbuZgRegw6E",
         "6HQeT87Qgh8TkZPJVcbkZh8bQ3gW2st7ZJin8xEkvdWh",
         "DHLXnJdACTY83yKwnUkeoDjqi4QBbsYGa1v8tJL76ViX",

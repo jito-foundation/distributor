@@ -58,7 +58,7 @@ pub fn process_generate_kv_proof(args: &Args, generate_kv_proof_args: &GenerateK
     }
 }
 
-fn write_to_file(
+fn write_to_file_zip(
     generate_kv_proof_args: &GenerateKvProofArgs,
     file_index: u64,
     proofs: &HashMap<String, KvProof>,
@@ -80,4 +80,20 @@ fn write_to_file(
     // Apply the changes you've made.
     // Dropping the `ZipWriter` will have the same effect, but may silently fail
     zip.finish().unwrap();
+}
+
+fn write_to_file(
+    generate_kv_proof_args: &GenerateKvProofArgs,
+    file_index: u64,
+    proofs: &HashMap<String, KvProof>,
+) {
+    let path = generate_kv_proof_args
+        .kv_path
+        .as_path()
+        .join(format!("{}.json", file_index));
+
+    println!("write to file {}", file_index);
+    let serialized = serde_json::to_string_pretty(proofs).unwrap();
+    let mut file: File = File::create(path).unwrap();
+    file.write_all(serialized.as_bytes()).unwrap();
 }

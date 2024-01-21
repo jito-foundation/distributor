@@ -15,7 +15,7 @@ use axum::{
     Json, Router,
 };
 use http::Request;
-use jito_merkle_tree::tree_node::TreeNode;
+use jito_merkle_tree::{airdrop_merkle_tree::UserProof, tree_node::TreeNode};
 use serde_derive::{Deserialize, Serialize};
 use solana_program::pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -87,7 +87,7 @@ async fn get_user_info(
         .get(&user_pubkey)
         .ok_or(ApiError::UserNotFound(user_pubkey.to_string()))?;
 
-    let proof = Proof {
+    let proof = UserProof {
         merkle_tree: node.0.to_string(),
         amount: node.1.amount(),
         proof: node
@@ -122,14 +122,6 @@ async fn get_distributors(State(state): State<Arc<RouterState>>) -> Result<impl 
 
 async fn root() -> impl IntoResponse {
     "Jupiter Airdrop API"
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Proof {
-    // merkle tree that user belongs
-    pub merkle_tree: String,
-    pub amount: u64,
-    pub proof: Vec<[u8; 32]>,
 }
 
 #[cfg(test)]
