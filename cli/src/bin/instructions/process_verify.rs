@@ -15,6 +15,12 @@ pub fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
 
         let merkle_tree =
             AirdropMerkleTree::new_from_file(&single_tree_path).expect("failed to read");
+
+        println!(
+            "Verify merkle tree airdrop version {}",
+            merkle_tree.airdrop_version
+        );
+
         let (distributor_pubkey, _bump) =
             get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
         let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
@@ -34,9 +40,5 @@ pub fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
 
         assert_eq!(merke_tree_state.admin, verfify_args.admin);
         assert_eq!(merke_tree_state.enable_slot, verfify_args.enable_slot);
-        println!(
-            "done verify merkle tree airdrop version {}",
-            merkle_tree.airdrop_version
-        );
     }
 }

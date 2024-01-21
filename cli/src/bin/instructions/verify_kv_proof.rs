@@ -10,9 +10,8 @@ pub fn verify_kv_proof(verify_kv_proof_args: &VerifyKvProofArgs) {
     let mut rng = rand::thread_rng();
     for i in 0..verify_kv_proof_args.num_verify {
         let index = rng.gen_range(0, num_addresses);
-
         let pubkey = csv_entries[index].pubkey.clone();
-
+        println!("Verify count {} index {} pubkey {}", i, index, pubkey);
         // request to kv
         let kv_proof: UserProof =
             reqwest::blocking::get(format!("{}/{}", verify_kv_proof_args.kv_api, pubkey))
@@ -29,7 +28,5 @@ pub fn verify_kv_proof(verify_kv_proof_args: &VerifyKvProofArgs) {
         assert_eq!(kv_proof.amount, local_proof.amount);
         assert_eq!(kv_proof.merkle_tree, local_proof.merkle_tree);
         assert_eq!(kv_proof.proof, local_proof.proof);
-
-        println!("Done verify count {} index {} pubkey {}", i, index, pubkey);
     }
 }
