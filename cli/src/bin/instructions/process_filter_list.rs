@@ -1,5 +1,6 @@
 use crate::*;
 
+/// filter from pubkey only
 pub fn process_filter_list(filter_list_args: &FilterListArgs) {
     let community_list = CsvEntry::new_from_file(&filter_list_args.csv_path).unwrap();
     let test_list: Vec<String> = get_pre_list();

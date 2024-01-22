@@ -221,6 +221,9 @@ pub struct CreateMerkleTreeArgs {
 
     #[clap(long, env)]
     pub should_include_test_list: bool,
+
+    #[clap(long, env)]
+    pub amount: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -268,6 +271,9 @@ pub struct CreateTestListArgs {
     /// Merkle tree out path
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
+
+    #[clap(long, env)]
+    pub amount: u64,
 }
 
 #[derive(Parser, Debug)]
