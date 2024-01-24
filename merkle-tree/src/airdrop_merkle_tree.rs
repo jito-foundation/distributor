@@ -97,15 +97,25 @@ impl AirdropMerkleTree {
     }
 
     /// Load a merkle tree from a csv path
-    pub fn new_from_csv(path: &PathBuf, version: u64) -> Result<Self> {
+    pub fn new_from_csv(path: &PathBuf, version: u64, decimals: u32) -> Result<Self> {
         let csv_entries = CsvEntry::new_from_file(path)?;
-        let tree_nodes: Vec<TreeNode> = csv_entries.into_iter().map(TreeNode::from).collect();
+        let tree_nodes: Vec<TreeNode> = csv_entries
+            .into_iter()
+            .map(|x| TreeNode::from_csv(x, decimals))
+            .collect();
         let tree = Self::new(tree_nodes, version)?;
         Ok(tree)
     }
 
-    pub fn new_from_entries(csv_entries: Vec<CsvEntry>, version: u64) -> Result<Self> {
-        let tree_nodes: Vec<TreeNode> = csv_entries.into_iter().map(TreeNode::from).collect();
+    pub fn new_from_entries(
+        csv_entries: Vec<CsvEntry>,
+        version: u64,
+        decimals: u32,
+    ) -> Result<Self> {
+        let tree_nodes: Vec<TreeNode> = csv_entries
+            .into_iter()
+            .map(|x| TreeNode::from_csv(x, decimals))
+            .collect();
         let tree = Self::new(tree_nodes, version)?;
         Ok(tree)
     }

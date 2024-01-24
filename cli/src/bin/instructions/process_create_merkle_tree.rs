@@ -37,7 +37,9 @@ pub fn process_create_merkle_tree(merkle_tree_args: &CreateMerkleTreeArgs) {
         csv_entries = csv_entries[last_index..csv_entries.len()].to_vec();
 
         // use index as version
-        let merkle_tree = AirdropMerkleTree::new_from_entries(sub_tree, index).unwrap();
+        let merkle_tree =
+            AirdropMerkleTree::new_from_entries(sub_tree, index, merkle_tree_args.decimals)
+                .unwrap();
 
         let base_path_clone = base_path.clone();
         let path = base_path_clone
@@ -58,7 +60,9 @@ pub fn process_create_merkle_tree(merkle_tree_args: &CreateMerkleTreeArgs) {
             })
             .collect::<Vec<CsvEntry>>();
 
-        let merkle_tree = AirdropMerkleTree::new_from_entries(test_list, index).unwrap();
+        let merkle_tree =
+            AirdropMerkleTree::new_from_entries(test_list, index, merkle_tree_args.decimals as u32)
+                .unwrap();
         let base_path_clone = base_path.clone();
         let path = base_path_clone
             .as_path()

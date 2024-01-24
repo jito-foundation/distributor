@@ -17,6 +17,7 @@ pub fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestL
         max_nodes_per_tree: create_test_list_args.amount,
         should_include_test_list: false,
         amount: create_test_list_args.amount,
+        decimals: create_test_list_args.decimals,
     };
     process_create_merkle_tree(merkle_tree_args);
 }

@@ -24,8 +24,10 @@ pub fn process_filter_list(filter_list_args: &FilterListArgs) {
     }
 
     // remove duplicate
+    println!("num node {} ", full_list.len());
     full_list.sort_unstable();
     full_list.dedup_by(|a, b| a.0 == b.0);
+    println!("num node {} ", full_list.len());
 
     let mut wtr = Writer::from_path(&filter_list_args.destination_path).unwrap();
     wtr.write_record(&["pubkey", "amount"]).unwrap();

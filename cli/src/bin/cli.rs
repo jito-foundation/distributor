@@ -224,6 +224,8 @@ pub struct CreateMerkleTreeArgs {
 
     #[clap(long, env)]
     pub amount: u64,
+    #[clap(long, env)]
+    pub decimals: u32,
 }
 
 #[derive(Parser, Debug)]
@@ -274,6 +276,9 @@ pub struct CreateTestListArgs {
 
     #[clap(long, env)]
     pub amount: u64,
+
+    #[clap(long, env)]
+    pub decimals: u32,
 }
 
 #[derive(Parser, Debug)]
