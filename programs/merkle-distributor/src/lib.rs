@@ -17,8 +17,20 @@ use instructions::*;
 pub mod error;
 pub mod instructions;
 pub mod state;
+use solana_security_txt::security_txt;
 
 declare_id!("meRjbQXFNf5En86FXT2YPz1dQzLj4Yb3xK8u1MVgqpb");
+
+security_txt! {
+    // Required fields
+    name: "Merkle Distributor",
+    project_url: "https://jup.ag/",
+    contacts: "email:feedback.raccoons.dev",
+    policy: "https://github.com/jup-ag/distributor",
+    // Optional Fields
+    preferred_languages: "en",
+    source_code: "https://github.com/jup-ag/distributor"
+}
 
 #[program]
 pub mod merkle_distributor {
