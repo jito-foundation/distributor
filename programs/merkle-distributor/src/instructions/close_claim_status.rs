@@ -22,6 +22,6 @@ pub struct CloseClaimStatus<'info> {
 }
 
 #[allow(clippy::result_large_err)]
-pub fn handle_close_status(ctx: Context<CloseClaimStatus>) -> Result<()> {
+pub fn handle_close_status(_ctx: Context<CloseClaimStatus>) -> Result<()> {
     Ok(())
 }

@@ -10,7 +10,6 @@ use jito_merkle_verify::verify;
 
 use crate::{
     error::ErrorCode,
-    merkle_distributor,
     state::{
         claim_status::ClaimStatus, claimed_event::NewClaimEvent,
         merkle_distributor::MerkleDistributor,
