@@ -350,6 +350,8 @@ pub struct MassSendArgs {
     pub des_path: PathBuf,
     #[clap(long, env)]
     pub max_address_per_tx: u64,
+    #[clap(long, env)]
+    pub amount: u64,
 }
 
 #[derive(Parser, Debug)]
@@ -358,6 +360,8 @@ pub struct ResendSendArgs {
     pub des_path: PathBuf,
     #[clap(long, env)]
     pub max_address_per_tx: u64,
+    #[clap(long, env)]
+    pub amount: u64,
 }
 
 #[derive(Parser, Debug)]

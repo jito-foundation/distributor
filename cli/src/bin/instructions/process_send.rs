@@ -21,6 +21,7 @@ pub fn parse_send_addresse(path: &PathBuf) -> Result<HashMap<String, String>> {
 
 fn send_for_batch_address(
     args: &Args,
+    amount: u64,
     batch_address: Vec<String>,
 ) -> Result<(Signature, Vec<String>)> {
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::finalized());
@@ -55,7 +56,7 @@ fn send_for_batch_address(
                         &user_ata,
                         &keypair.pubkey(),
                         &[],
-                        10000000000000,
+                        amount,
                     )
                     .unwrap(),
                 )
@@ -115,7 +116,7 @@ pub fn process_mass_send(args: &Args, mass_send_args: &MassSendArgs) {
     );
 
     for batch_address in wrap_batch_addresses.iter() {
-        match send_for_batch_address(args, batch_address.clone()) {
+        match send_for_batch_address(args, mass_send_args.amount, batch_address.clone()) {
             Ok((signature, qualified_address)) => {
                 println!("signature {}", signature);
                 for address in qualified_address.iter() {
@@ -182,7 +183,7 @@ pub fn process_resend(args: &Args, resend_args: &ResendSendArgs) {
                         } else {
                             addresses.clone()
                         };
-                    match send_for_batch_address(args, should_send_addresses) {
+                    match send_for_batch_address(args, resend_args.amount, should_send_addresses) {
                         Ok((signature, qualified_address)) => {
                             println!("signature {}", signature);
                             for address in qualified_address.iter() {
