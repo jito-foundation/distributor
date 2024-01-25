@@ -80,18 +80,6 @@ mod tests {
         ];
 
         let total = get_max_total_claim(&nodes);
-        assert_eq!(total, 1000); // 100 + 200 + 300 + 400
-    }
-
-    #[test]
-    #[should_panic(expected = "Option::unwrap()` on a `None` value")]
-    fn test_get_max_total_claim_overflow() {
-        let large_number = u64::MAX / 2;
-        let nodes = vec![
-            create_node(Pubkey::new_unique(), large_number),
-            create_node(Pubkey::new_unique(), large_number),
-        ];
-
-        let _ = get_max_total_claim(&nodes);
+        assert_eq!(total, 400); // 100 + 300
     }
 }

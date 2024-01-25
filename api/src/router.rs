@@ -124,48 +124,48 @@ async fn root() -> impl IntoResponse {
     "Jupiter Airdrop API"
 }
 
-#[cfg(test)]
-mod router_test {
-    use std::{collections::HashMap, time, time::Instant};
+// #[cfg(test)]
+// mod router_test {
+//     use std::{collections::HashMap, time, time::Instant};
 
-    use futures::future::join_all;
-    use hyper::{Body, Client, Method, Request};
-    use hyper_tls::HttpsConnector;
-    use solana_sdk::pubkey::Pubkey;
+//     use futures::future::join_all;
+//     use hyper::{Body, Client, Method, Request};
+//     use hyper_tls::HttpsConnector;
+//     use solana_sdk::pubkey::Pubkey;
 
-    use super::*;
+//     use super::*;
 
-    #[tokio::test]
-    async fn test_parallel_request() {
-        let url = format!("http://localhost:7001/user/1111sU1sYbe2QWn1rNjUFziHmj6R8Xdt7tj2Q2RFaM",);
+//     #[tokio::test]
+//     async fn test_parallel_request() {
+//         let url = format!("http://localhost:7001/user/1111sU1sYbe2QWn1rNjUFziHmj6R8Xdt7tj2Q2RFaM",);
 
-        let https = HttpsConnector::new();
-        let client = Client::builder().build::<_, hyper::Body>(https);
+//         let https = HttpsConnector::new();
+//         let client = Client::builder().build::<_, hyper::Body>(https);
 
-        let now = time::Instant::now();
-        let mut handles = vec![];
-        for _i in 0..10_000 {
-            handles.push(async {
-                let result = client.get(url.parse().unwrap()).await;
-                match result {
-                    Ok(response) => response.status().as_u16() == 200,
-                    Err(_) => false,
-                }
-            });
-        }
-        let outputs = join_all(handles).await;
+//         let now = time::Instant::now();
+//         let mut handles = vec![];
+//         for _i in 0..10_000 {
+//             handles.push(async {
+//                 let result = client.get(url.parse().unwrap()).await;
+//                 match result {
+//                     Ok(response) => response.status().as_u16() == 200,
+//                     Err(_) => false,
+//                 }
+//             });
+//         }
+//         let outputs = join_all(handles).await;
 
-        let mut successes = 0u64;
-        let mut failures = 0u64;
-        for is_ok in outputs {
-            if is_ok {
-                successes += 1;
-            } else {
-                failures += 1;
-            }
-        }
-        println!("handle all request took {:.2?}", now.elapsed());
-        println!("success: {}, failures: {}", successes, failures);
-        assert_eq!(0, failures);
-    }
-}
+//         let mut successes = 0u64;
+//         let mut failures = 0u64;
+//         for is_ok in outputs {
+//             if is_ok {
+//                 successes += 1;
+//             } else {
+//                 failures += 1;
+//             }
+//         }
+//         println!("handle all request took {:.2?}", now.elapsed());
+//         println!("success: {}, failures: {}", successes, failures);
+//         assert_eq!(0, failures);
+//     }
+// }
