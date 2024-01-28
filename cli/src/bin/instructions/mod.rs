@@ -40,3 +40,5 @@ pub mod process_send;
 pub use process_send::*;
 pub mod verify_kv_proof;
 pub use verify_kv_proof::*;
+pub mod process_set_clawback_receiver;
+pub use process_set_clawback_receiver::*;

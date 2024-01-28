@@ -23,10 +23,12 @@ pub fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
 
         let (distributor_pubkey, _bump) =
             get_merkle_distributor_pda(&args.program_id, &args.mint, merkle_tree.airdrop_version);
-        let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
 
-        let token_vault_account: TokenAccount = program.account(token_vault).unwrap();
-        assert_eq!(token_vault_account.amount, merkle_tree.max_total_claim);
+        if !verfify_args.skip_verify_amount {
+            let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
+            let token_vault_account: TokenAccount = program.account(token_vault).unwrap();
+            assert_eq!(token_vault_account.amount, merkle_tree.max_total_claim);
+        }
 
         let merke_tree_state: MerkleDistributor = program.account(distributor_pubkey).unwrap();
         assert_eq!(merke_tree_state.root, merkle_tree.merkle_root);
@@ -40,5 +42,9 @@ pub fn process_verify(args: &Args, verfify_args: &VerifyArgs) {
 
         assert_eq!(merke_tree_state.admin, verfify_args.admin);
         assert_eq!(merke_tree_state.enable_slot, verfify_args.enable_slot);
+
+        let clawback_receiver =
+            get_associated_token_address(&verfify_args.clawback_receiver_owner, &args.mint);
+        assert_eq!(merke_tree_state.clawback_receiver, clawback_receiver);
     }
 }

@@ -117,6 +117,9 @@ pub enum Commands {
     ViewClaimStatus(ViewClaimStatusArgs),
 
     VerifyKvProof(VerifyKvProofArgs),
+    TotalClaim(TotalClaimAgrs),
+
+    SetClawbackReceiver(ClawbackReceiverArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -156,6 +159,9 @@ pub struct VerifyArgs {
     pub clawback_start_ts: i64,
 
     #[clap(long, env)]
+    pub clawback_receiver_owner: Pubkey,
+
+    #[clap(long, env)]
     pub enable_slot: u64,
 
     #[clap(long, env)]
@@ -163,6 +169,8 @@ pub struct VerifyArgs {
 
     #[clap(long, env)]
     pub closable: bool,
+    #[clap(long, env)]
+    pub skip_verify_amount: bool,
 }
 
 // NewDistributor subcommand args
@@ -233,7 +241,7 @@ pub struct SetAdminArgs {
     #[clap(long, env)]
     pub new_admin: Pubkey,
     #[clap(long, env)]
-    pub airdrop_version: u64,
+    pub merkle_tree_path: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -383,6 +391,21 @@ pub struct VerifyKvProofArgs {
     pub num_verify: u64,
 }
 
+#[derive(Parser, Debug)]
+pub struct TotalClaimAgrs {
+    #[clap(long, env)]
+    pub num_tree: u64,
+}
+
+#[derive(Parser, Debug)]
+pub struct ClawbackReceiverArgs {
+    /// Merkle distributor path
+    #[clap(long, env)]
+    pub merkle_tree_path: PathBuf,
+    #[clap(long, env)]
+    receiver: Pubkey,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -443,6 +466,11 @@ fn main() {
         Commands::Resend(re_send_args) => process_resend(&args, re_send_args),
         Commands::ViewClaimStatus(_view_claim_status_args) => view_claim_status(&args),
         Commands::VerifyKvProof(verify_kv_proof_args) => verify_kv_proof(verify_kv_proof_args),
+        Commands::TotalClaim(total_claim_argrs) => get_total_claim(&args, total_claim_argrs),
+
+        Commands::SetClawbackReceiver(set_clawback_receiver_argrs) => {
+            process_set_clawback_receiver(&args, set_clawback_receiver_argrs)
+        }
     }
 }
 

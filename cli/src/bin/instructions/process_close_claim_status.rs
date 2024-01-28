@@ -3,6 +3,20 @@ use merkle_distributor::state::claim_status::ClaimStatus;
 
 use crate::*;
 
+pub fn get_total_claim(args: &Args, total_claim_args: &TotalClaimAgrs) {
+    let program = args.get_program_client();
+
+    let mut total_node_claimed = 0u64;
+    for i in 0..=total_claim_args.num_tree {
+        let (distributor_pubkey, _bump) =
+            get_merkle_distributor_pda(&args.program_id, &args.mint, i);
+        let distributor: MerkleDistributor = program.account(distributor_pubkey).unwrap();
+        total_node_claimed += distributor.num_nodes_claimed;
+    }
+
+    println!("total_node_claimed {}", total_node_claimed);
+}
+
 pub fn view_claim_status(args: &Args) {
     let program = args.get_program_client();
     let claim_status_accounts: Vec<(Pubkey, ClaimStatus)> = program
