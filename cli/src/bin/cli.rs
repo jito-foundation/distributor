@@ -14,8 +14,9 @@ use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::instruction::Instruction;
 use solana_rpc_client::rpc_client::RpcClient;
 use solana_sdk::{
-    account::Account, commitment_config::CommitmentConfig, signature::read_keypair_file,
-    signer::Signer, transaction::Transaction,
+    account::Account, commitment_config::CommitmentConfig,
+    compute_budget::ComputeBudgetInstruction, signature::read_keypair_file, signer::Signer,
+    transaction::Transaction,
 };
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
@@ -46,6 +47,10 @@ pub struct Args {
     /// Payer keypair
     #[clap(long, env)]
     pub keypair_path: PathBuf,
+
+    /// Priority fee
+    #[clap(long, env)]
+    pub priority: Option<u64>,
 }
 
 // Subcommands
@@ -211,6 +216,8 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
     let claimant = keypair.pubkey();
 
+    let priority_fee = args.priority.unwrap_or(0);
+
     let (distributor, bump) =
         get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
     println!("distributor pubkey {}", distributor);
@@ -235,6 +242,8 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
 
     let claimant_ata = get_associated_token_address(&claimant, &args.mint);
 
+    let mut ixs = vec![];
+
     let claim_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::ClaimLocked {
@@ -248,14 +257,22 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
         .to_account_metas(None),
         data: merkle_distributor::instruction::ClaimLocked {}.data(),
     };
+    ixs.push(claim_ix);
+
+    if priority_fee > 0 {
+        let instruction = ComputeBudgetInstruction::set_compute_unit_price(priority_fee);
+        ixs.push(instruction);
+        println!(
+            "Added priority fee instruction of {} microlamports",
+            priority_fee
+        );
+    } else {
+        println!("No priority fee added. Add one with --priority <microlamports u64>");
+    }
 
     let blockhash = client.get_latest_blockhash().unwrap();
-    let tx = Transaction::new_signed_with_payer(
-        &[claim_ix],
-        Some(&claimant.key()),
-        &[&keypair],
-        blockhash,
-    );
+    let tx =
+        Transaction::new_signed_with_payer(&ixs, Some(&claimant.key()), &[&keypair], blockhash);
 
     let signature = client
         .send_and_confirm_transaction_with_spinner(&tx)
