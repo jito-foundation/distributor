@@ -1,4 +1,4 @@
-#SIMD-0098 Reward full priority fee to validator
+# SIMD-0098 Reward full priority fee to validator
 
 The SIMD can be viewed [on Github](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0096-reward-collected-priority-fee-in-entirety.md) and a governance [forum proposal](https://forum.solana.com/t/proposal-for-enabling-the-reward-full-priority-fee-to-validator-on-solana-mainnet-beta/1456) has been posted.
 
@@ -6,9 +6,9 @@ The stake weight gathering process takes place in epoch 616 and the voting proce
 
 The token distribution occurs via merkle distributor (see this repo). Validators need to claim their voting tokens using their identity account.
 
-# Key addresses and hashes
+## Key addresses and hashes
 
-## File hashes
+### File hashes
 
 Verify the `feature_proposal.csv` file has a hash of `3972a374683e9fe9bf63ca179ae603ebf26e9cd5`
 

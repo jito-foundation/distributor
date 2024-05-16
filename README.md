@@ -2,7 +2,7 @@
 
 This repository is forked from Jito's [Merkle Distributor](https://github.com/jito-foundation/distributor) and intended to be used for the distribution of vote-specific tokens for validator governance.
 
-# Voting process
+## Voting process
 
 1. After a proposal completes its period on the governance forum a stake weight capture & verification epoch begins
 2. Using the [SPL Feature Proposal CLI](https://spl.solana.com/feature-proposal) a CSV file with current stake weights is generated
@@ -10,7 +10,7 @@ This repository is forked from Jito's [Merkle Distributor](https://github.com/ji
 4. The voting token mint address, CSV file, CSV hash and merkle tree hash are posted to the forum proposal post
 5. In the subsequent epoch the tokens are minted to the distributor vault and the mint authority is burned, validators can claim their tokens and vote by transferring them to a designated account (also posted in the forum proposal)
 
-# Verifying the CSV file
+## Verifying the CSV file
 Please use the `check_stake_weights.sh` script to verify the CSV file against on-chain stake weight. This can only be done during epoch 595 as stake weights will change after this.
 
 Usage:
@@ -18,7 +18,7 @@ Usage:
 bash ./check_stake_weights.sh [OPTIONAL_RPC_ADDRESS] ./feature-proposal.csv
 ```
 
-# Claiming voting tokens via CLI
+## Claiming voting tokens via CLI
 
 You can either use the CLI from the Jito repository above if you feel more comfortable, or from this repository.
 
@@ -43,7 +43,7 @@ cargo b -r
 ./target/release/cli --rpc-url https://api.mainnet-beta.solana.com --keypair-path <YOUR KEYPAIR> --airdrop-version 0 --mint <VOTE_MINT> --program-id mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv claim --merkle-tree-path ./votes/<SIMD>/merkle_tree.json
 ```
 
-# Casting a vote
+## Casting a vote
 
 To cast a vote, validators should transfer all their voting tokens to the destination address based on their choise of YES, NO or ABSTAIN (addresses will be shared in the forum proposal). You need access to the identity keypair .json file as well as the `spl-token` binary (Bundled with the Solana CLI or can be built from the [Solana Program Library](https://github.com/solana-labs/solana-program-library) with `cargo b -r --bin spl-token).
 
