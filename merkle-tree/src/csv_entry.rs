@@ -27,6 +27,15 @@ pub struct CsvEntry {
     pub category: AirdropCategory,
 }
 
+// Represents the Feature Proposal format CSV entry
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct FpCsvEntry {
+    /// Pubkey of the claimant; will be responsible for signing the claim
+    pub recipient: String,
+    /// amount unlocked, (ui amount)
+    pub amount: u64,
+}
+
 impl CsvEntry {
     pub fn new_from_file(path: &PathBuf) -> Result<Vec<Self>> {
         let file = File::open(path)?;
@@ -34,7 +43,13 @@ impl CsvEntry {
 
         let mut entries = Vec::new();
         for result in rdr.deserialize() {
-            let record: CsvEntry = result.unwrap();
+            let temp: FpCsvEntry = result.unwrap();
+            let record: CsvEntry = { CsvEntry{
+                pubkey: temp.recipient,
+                amount_unlocked: temp.amount,
+                amount_locked: 0,
+                category: AirdropCategory::Validator
+            } };
             entries.push(record);
         }
 
