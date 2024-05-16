@@ -1,4 +1,4 @@
-# SIMD-0098 Reward full priority fee to validator
+# SIMD-0096 Reward full priority fee to validator
 
 The SIMD can be viewed [on Github](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0096-reward-collected-priority-fee-in-entirety.md) and a governance [forum proposal](https://forum.solana.com/t/proposal-for-enabling-the-reward-full-priority-fee-to-validator-on-solana-mainnet-beta/1456) has been posted.
 
