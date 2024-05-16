@@ -11,11 +11,11 @@ This repository is forked from Jito's [Merkle Distributor](https://github.com/ji
 5. In the subsequent epoch the tokens are minted to the distributor vault and the mint authority is burned, validators can claim their tokens and vote by transferring them to a designated account (also posted in the forum proposal)
 
 ## Verifying the CSV file
-Please use the `check_stake_weights.sh` script to verify the CSV file against on-chain stake weight. This can only be done during epoch 595 as stake weights will change after this.
+Please use the `check_stake_weights.sh` script to verify the CSV file against on-chain stake weight. This can only be done during the stake weight capture epoch as stake weights will change after this.
 
 Usage:
 ```
-bash ./votes/check_stake_weights.sh [OPTIONAL_RPC_ADDRESS] ./feature-proposal.csv
+bash ./votes/check_stake_weights.sh [OPTIONAL_RPC_ADDRESS] ./votes/simdXXXX/feature-proposal.csv
 ```
 
 ## Claiming voting tokens via CLI
