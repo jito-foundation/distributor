@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Originally authoried by Zantetsu from Shinobi Systems
 
 
 # Function to print out usage info and exit with error
