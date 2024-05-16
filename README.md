@@ -15,7 +15,7 @@ Please use the `check_stake_weights.sh` script to verify the CSV file against on
 
 Usage:
 ```
-bash ./check_stake_weights.sh [OPTIONAL_RPC_ADDRESS] ./feature-proposal.csv
+bash ./votes/check_stake_weights.sh [OPTIONAL_RPC_ADDRESS] ./feature-proposal.csv
 ```
 
 ## Claiming voting tokens via CLI
