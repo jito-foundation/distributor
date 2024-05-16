@@ -6,7 +6,7 @@ This repository is forked from Jito's [Merkle Distributor](https://github.com/ji
 
 1. After a proposal completes its period on the governance forum a stake weight capture & verification epoch begins
 2. Using the [SPL Feature Proposal CLI](https://spl.solana.com/feature-proposal) a CSV file with current stake weights is generated
-3. A merkle tree is generated using this CLI and the CSV file and both are uploaded here in a branch named after the SIMD
+3. A merkle tree is generated using this CLI and the CSV file and both are uploaded here in a directory under `./votes` named after the SIMD
 4. The voting token mint address, CSV file, CSV hash and merkle tree hash are posted to the forum proposal post
 5. In the subsequent epoch the tokens are minted to the distributor vault and the mint authority is burned, validators can claim their tokens and vote by transferring them to a designated account (also posted in the forum proposal)
 
