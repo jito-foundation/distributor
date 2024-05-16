@@ -13,7 +13,7 @@ The token distribution occurs via merkle distributor (see this repo). Validators
 Verify the `feature_proposal.csv` file has a hash of `3972a374683e9fe9bf63ca179ae603ebf26e9cd5`
 
 ```bash
-cat feature_proposal.csv | sort | shasum
+cat feature-proposal.csv | sort | shasum
 ```
 
 Verify the merkle tree has a hash of `3678a96f40de4b6eec8eedbc26c9b731f502362b`
