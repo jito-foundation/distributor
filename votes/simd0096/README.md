@@ -54,3 +54,8 @@ ABSTA1Nsimd96Cuw3M5TYAkZ1d71ug4bvVHiqHhhJzs
 ```
 
 `spl-token transfer simd96Cuw3M5TYAkZ1d71ug4bvVHiqHhhJzsFHHQxgq ALL <VOTE_ADDRESS>`
+
+## Tally / Results
+Use the tally.sh script in this directory to check the results at any time.
+
+`bash tally.sh`
