@@ -19,3 +19,10 @@ cargo b -r
 ```
 
 Note that for searchers and validators, not all tokens will be vested until December 7, 2024. You can check the vesting status at `https://jito.network/airdrop`.
+
+## License
+
+Licensed under either of
+
+ * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+ * GNU General Public License version 3.0 ([LICENSE-GPL](LICENSE-GPL))

@@ -20,7 +20,7 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup/
       - uses: ./.github/actions/setup-solana/
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         name: Cache Cargo registry + index
         id: cache-anchor
         with:
@@ -92,7 +92,7 @@ jobs:
           solana-verify build --library-name merkle_distributor
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build
           path: |
