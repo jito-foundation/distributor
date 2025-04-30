@@ -19,10 +19,10 @@ codegen-units = 1
 
 [workspace.package]
 version = "0.0.1"
-authors = ["Jito Labs <team@jito.wtf>"]
-repository = ""
-homepage = "jito.wtf"
-license = ""
+authors = ["Jito Network Maintainers <support@jito.network>"]
+repository = "https://github.com/jito-foundation/distributor"
+omepage = "https://jito.network/"
+license = "Apache-2.0 OR GPL-3.0"
 edition = "2021"
 publish = false
 

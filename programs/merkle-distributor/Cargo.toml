@@ -5,7 +5,7 @@ description = "A Solana program for distributing tokens according to a Merkle ro
 edition = { workspace = true }
 repository = "https://github.com/jito-foundation/governance"
 authors = ["Jito Foundation <team@jito.network>"]
-license = "GPL-3.0"
+license = "GPL-3.0 OR Apache-2.0"
 
 [lib]
 crate-type = ["cdylib", "lib"]
