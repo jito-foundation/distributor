@@ -1,0 +1,18 @@
+{
+  "name": "merkle-distributor-tests",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "test": "ts-mocha -p tsconfig.json -t 1000000 programs/merkle-distributor/tests/**/*.ts"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "0.31.1",
+    "@solana/web3.js": "^1.95.1",
+    "@solana/spl-token": "^0.3.5",
+    "js-sha3": "^0.9.1",
+    "ts-mocha": "^10.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.3",
+    "mocha": "^10.2.0"
+  }
+}

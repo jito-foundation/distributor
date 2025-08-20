@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Install toolchain
+        run: |
+          rustup toolchain install 1.83 --profile minimal --no-self-update
+          rustup default 1.83
+          cargo install --locked anchor-cli@0.31.1
+          sh -c "$(curl -sSfL https://release.solana.com/v2.3.0/install)" -- --no-modify-path
+      - name: Show versions
+        run: |
+          anchor --version
+          solana --version
+          rustc --version
+          cargo --version
+      - name: Build and test
+        run: |
+          export RUSTC_WRAPPER="$(which sccache)"
+          cargo test --manifest-path verify/Cargo.toml --no-default-features -- --nocapture
+          cargo test -p merkle-distributor --features test-sbf -- --nocapture
+
+  ci-lite:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-lite-${{ hashFiles('**/Cargo.lock') }}
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Install toolchain
+        run: |
+          rustup toolchain install 1.83 --profile minimal --no-self-update
+          rustup default 1.83
+          cargo install --locked anchor-cli@0.31.1
+          sh -c "$(curl -sSfL https://release.solana.com/v2.3.0/install)" -- --no-modify-path
+      - name: Show versions
+        run: |
+          anchor --version
+          solana --version
+          rustc --version
+          cargo --version
+      - name: Run ci-lite tests
+        run: |
+          export RUSTC_WRAPPER="$(which sccache)"
+          cargo test --manifest-path verify/Cargo.toml --no-default-features -- --nocapture
+          cargo test -p merkle-distributor --features ci-lite -- --nocapture

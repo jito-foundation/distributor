@@ -1,7 +1,13 @@
 [package]
 name = "jito-merkle-verify"
-version = { workspace = true }
-edition = { workspace = true }
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+sp-hash = ["solana-program"]
 
 [dependencies]
-solana-program = { workspace = true }
+solana-program = { version = "2.3", optional = true, default-features = false }
+tiny-keccak = { version = "2", default-features = false, features = ["keccak"] }
+

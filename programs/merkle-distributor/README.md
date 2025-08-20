@@ -24,3 +24,33 @@ The Merkle distributor is also significantly easier to manage from an operations
 ## License
 
 The Merkle distributor program and SDK is distributed under the GPL v3.0 license.
+
+## Local Runbook
+
+```bash
+solana-test-validator -r &
+sleep 5
+solana config set -ul
+solana airdrop 2
+
+anchor build -p merkle_distributor
+npm install
+anchor test -p merkle_distributor
+```
+
+Running the test prints a single passing case that creates a distributor, funds the vault, and claims tokens with a valid proof.
+
+## Merkle Tree Rules
+
+- **Leaf**: `keccak(0x00 || claimant_pubkey || amount_unlocked_le || amount_locked_le)`
+- **Parent**: `keccak(0x01 || left || right)` with lexicographic ordering of child hashes
+
+## Account Map
+
+- **MerkleDistributor (PDA)** – seeds: `"MerkleDistributor", mint, version`, bump stored on account.
+- **Token Vault (ATA)** – ATA for the distributor PDA over the reward mint; distributor PDA signs CPIs.
+- **ClaimStatus (PDA)** – seeds: `"ClaimStatus", claimant, distributor`; records unlocked/locked amounts and withdrawn flag.
+- **Admin** – initializes the distributor and may change admin or clawback receiver.
+- **Clawback Receiver** – token account that receives remaining tokens after `clawback_start_ts`.
+- **Claimant** – signer matching the `to` account owner when calling `new_claim`.
+- **Time Checks** – `start_vesting_ts < end_vesting_ts < clawback_start_ts` and all future; `clawed_back` must be false when claiming.
