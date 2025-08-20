@@ -1,7 +1,7 @@
 use anchor_lang::{
     context::Context,
     prelude::*,
-    solana_program::{keccak::hashv, system_program::System},
+    solana_program::keccak::hashv,
     Accounts, Key, Result,
 };
 use anchor_spl::{
@@ -117,7 +117,7 @@ pub fn handle_new_claim(
     let distributor = &ctx.accounts.distributor;
 
     require!(
-        verify_proof(leaf.0, distributor.root, &proof),
+        verify_proof(leaf.to_bytes(), distributor.root, &proof),
         ErrorCode::InvalidProof
     );
 
