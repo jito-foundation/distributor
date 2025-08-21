@@ -20,4 +20,6 @@ solana airdrop 2
 
 anchor build -p merkle_distributor
 anchor test  -p merkle_distributor
+cargo test  -p jito-merkle-verify -- --nocapture
+cargo test  -p merkle-distributor --features ci-lite -- --nocapture
 ```
