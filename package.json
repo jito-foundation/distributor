@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "test": "ts-mocha -p tsconfig.json -t 1000000 programs/merkle-distributor/tests/**/*.ts"
+    "predeploy:local": "node scripts/ensure-anchor-wallet.js",
+    "deploy:local": "npm run predeploy:local && anchor deploy -p merkle_distributor",
+    "build:local": "anchor build -p merkle_distributor"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "0.31.1",

@@ -3,8 +3,8 @@ anchor_version = "0.31.1"
 solana_version = "2.3.0"
 
 [provider]
-cluster = "localnet"
-wallet  = "/Users/$(whoami)/.config/solana/id.json"
+cluster = "Localnet"
+wallet  = "~/.config/solana/id.json"
 
 [programs.localnet]
 merkle_distributor = "mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv"
