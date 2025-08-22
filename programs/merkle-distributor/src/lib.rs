@@ -10,7 +10,7 @@
 //!
 //! The Merkle distributor is also significantly easier to manage from an operations perspective, since one does not need to send a transaction to each individual address that may be redeeming tokens.
 
-#![allow(unexpected_cfgs, deprecated, clippy::too_many_arguments)]
+#![allow(unexpected_cfgs, clippy::too_many_arguments)]
 use anchor_lang::prelude::*;
 use instructions::*;
 use solana_security_txt::security_txt;
