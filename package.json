@@ -3,18 +3,15 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "predeploy:local": "node scripts/ensure-anchor-wallet.js",
-    "deploy:local": "npm run predeploy:local && anchor deploy -p merkle_distributor",
-    "build:local": "anchor build -p merkle_distributor"
+    "sync-ids": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/sync-program-id.ts",
+    "build:local": "npm run sync-ids && anchor build -p merkle_distributor",
+    "deploy:local": "npm run sync-ids && anchor deploy -p merkle_distributor",
+    "idl:init": "anchor idl init $(anchor keys list | awk '/merkle_distributor/ {print $2}') -f target/idl/merkle_distributor.json",
+    "idl:upgrade": "anchor idl upgrade $(anchor keys list | awk '/merkle_distributor/ {print $2}') -f target/idl/merkle_distributor.json"
   },
   "devDependencies": {
-    "@coral-xyz/anchor": "0.31.1",
-    "@solana/web3.js": "^1.95.1",
-    "@solana/spl-token": "^0.3.5",
-    "js-sha3": "^0.9.1",
-    "ts-mocha": "^10.0.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.3",
-    "mocha": "^10.2.0"
+    "@solana/web3.js": "^1.98.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }
