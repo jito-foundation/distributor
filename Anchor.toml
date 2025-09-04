@@ -7,4 +7,4 @@ cluster = "Localnet"
 wallet  = "~/.config/solana/id.json"
 
 [programs.localnet]
-merkle_distributor = "EvmP5JK19rxaDE46CbP3dkVUPUCP33GohhUf2Xxu9jMs"
+merkle_distributor = "DDnEBVcXb4efJ6yJKD2dMwTXPi3c7F7ZgnHUCmG9vchA"

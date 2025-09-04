@@ -10,6 +10,7 @@
     "idl:upgrade": "anchor idl upgrade $(anchor keys list | awk '/merkle_distributor/ {print $2}') -f target/idl/merkle_distributor.json"
   },
   "devDependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
     "@solana/web3.js": "^1.98.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

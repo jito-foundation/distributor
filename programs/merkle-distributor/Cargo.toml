@@ -15,7 +15,6 @@ path = "src/lib.rs"
 [features]
 default = []
 no-entrypoint = []
-no-idl = []
 cpi = ["no-entrypoint"]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 custom-heap = []
