@@ -10,7 +10,7 @@
 //!
 //! The Merkle distributor is also significantly easier to manage from an operations perspective, since one does not need to send a transaction to each individual address that may be redeeming tokens.
 
-#![allow(clippy::too_many_arguments)]
+#![allow(unexpected_cfgs, clippy::too_many_arguments, deprecated)]
 use anchor_lang::prelude::*;
 use instructions::*;
 use solana_security_txt::security_txt;
@@ -30,7 +30,7 @@ security_txt! {
     source_code: "https://github.com/jito-foundation/distributor"
 }
 
-declare_id!("mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv");
+declare_id!("DDnEBVcXb4efJ6yJKD2dMwTXPi3c7F7ZgnHUCmG9vchA");
 
 #[program]
 pub mod merkle_distributor {

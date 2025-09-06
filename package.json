@@ -1,0 +1,18 @@
+{
+  "name": "merkle-distributor-tests",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "sync-ids": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/sync-program-id.ts",
+    "build:local": "npm run sync-ids && anchor build -p merkle_distributor",
+    "deploy:local": "npm run sync-ids && anchor deploy -p merkle_distributor",
+    "idl:init": "anchor idl init $(anchor keys list | awk '/merkle_distributor/ {print $2}') -f target/idl/merkle_distributor.json",
+    "idl:upgrade": "anchor idl upgrade $(anchor keys list | awk '/merkle_distributor/ {print $2}') -f target/idl/merkle_distributor.json"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.98.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

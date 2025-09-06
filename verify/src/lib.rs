@@ -1,23 +1,70 @@
-use solana_program::hash::hashv;
+#![cfg_attr(not(test), no_std)]
 
-/// modified version of https://github.com/saber-hq/merkle-distributor/blob/ac937d1901033ecb7fa3b0db22f7b39569c8e052/programs/merkle-distributor/src/merkle_proof.rs#L8
-/// This function deals with verification of Merkle trees (hash trees).
-/// Direct port of https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.0/contracts/cryptography/MerkleProof.sol
-/// Returns true if a `leaf` can be proved to be a part of a Merkle tree
-/// defined by `root`. For this, a `proof` must be provided, containing
-/// sibling hashes on the branch from the leaf to the root of the tree. Each
-/// pair of leaves and each pair of pre-images are assumed to be sorted.
-pub fn verify(proof: Vec<[u8; 32]>, root: [u8; 32], leaf: [u8; 32]) -> bool {
+#[cfg(feature = "sp-hash")]
+fn hash_bytes(data: &[&[u8]]) -> [u8; 32] {
+    solana_program::keccak::hashv(data).0
+}
+
+#[cfg(not(feature = "sp-hash"))]
+fn hash_bytes(data: &[&[u8]]) -> [u8; 32] {
+    use tiny_keccak::{Hasher, Keccak};
+    let mut keccak = Keccak::v256();
+    for d in data {
+        keccak.update(d);
+    }
+    let mut out = [0u8; 32];
+    keccak.finalize(&mut out);
+    out
+}
+
+/// Verify a Merkle proof for a given leaf and root.
+pub fn verify_proof(leaf: [u8; 32], root: [u8; 32], proof: &[[u8; 32]]) -> bool {
     let mut computed_hash = leaf;
-    for proof_element in proof.into_iter() {
-        if computed_hash <= proof_element {
-            // Hash(current computed hash + current element of the proof)
-            computed_hash = hashv(&[&[1u8], &computed_hash, &proof_element]).to_bytes();
+    for proof_element in proof.iter() {
+        if computed_hash <= *proof_element {
+            computed_hash = hash_bytes(&[&[1u8], &computed_hash, proof_element]);
         } else {
-            // Hash(current element of the proof + current computed hash)
-            computed_hash = hashv(&[&[1u8], &proof_element, &computed_hash]).to_bytes();
+            computed_hash = hash_bytes(&[&[1u8], proof_element, &computed_hash]);
         }
     }
-    // Check if the computed hash (root) is equal to the provided root
     computed_hash == root
+}
+
+pub use verify_proof as verify;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hash_leaf(data: &[u8]) -> [u8; 32] {
+        hash_bytes(&[&[0u8], data])
+    }
+
+    fn hash_node(a: [u8; 32], b: [u8; 32]) -> [u8; 32] {
+        let (l, r) = if a <= b { (a, b) } else { (b, a) };
+        hash_bytes(&[&[1u8], &l, &r])
+    }
+
+    #[test]
+    fn verify_two_leaves() {
+        let a = hash_leaf(b"a");
+        let b = hash_leaf(b"b");
+        let root = hash_node(a, b);
+        assert!(verify_proof(a, root, &[b]));
+    }
+
+    #[test]
+    fn verify_multi_step() {
+        let a = hash_leaf(b"a");
+        let b = hash_leaf(b"b");
+        let c = hash_leaf(b"c");
+        let d = hash_leaf(b"d");
+
+        let node_ab = hash_node(a, b);
+        let node_cd = hash_node(c, d);
+        let root = hash_node(node_ab, node_cd);
+
+        let proof_for_b = [a, node_cd];
+        assert!(verify_proof(b, root, &proof_for_b));
+    }
 }

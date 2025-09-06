@@ -142,3 +142,12 @@ __pycache__/
 artifacts/
 src/idls/
 data/distributor-info.json
+target/
+.anchor/
+**/*.log
+.env
+.DS_Store
+**/id.json
+keys/*.json
+keys/*.json
+**/id.json

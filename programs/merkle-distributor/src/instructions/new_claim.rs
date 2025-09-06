@@ -1,12 +1,14 @@
 use anchor_lang::{
-    context::Context, prelude::*, solana_program::hash::hashv, system_program::System, Accounts,
-    Key, Result,
+    context::Context,
+    prelude::*,
+    solana_program::keccak::hashv,
+    Accounts, Key, Result,
 };
 use anchor_spl::{
     token,
     token::{Token, TokenAccount},
 };
-use jito_merkle_verify::verify;
+use jito_merkle_verify::verify_proof;
 
 use crate::{
     error::ErrorCode,
@@ -104,18 +106,18 @@ pub fn handle_new_claim(
 
     let claimant_account = &ctx.accounts.claimant;
 
-    // Verify the merkle proof.
-    let node = hashv(&[
+    // Verify the merkle proof. Leaf = keccak(0x00 || claimant || unlocked || locked)
+    let leaf = hashv(&[
+        LEAF_PREFIX,
         &claimant_account.key().to_bytes(),
         &amount_unlocked.to_le_bytes(),
         &amount_locked.to_le_bytes(),
     ]);
 
     let distributor = &ctx.accounts.distributor;
-    let node = hashv(&[LEAF_PREFIX, &node.to_bytes()]);
 
     require!(
-        verify(proof, distributor.root, node.to_bytes()),
+        verify_proof(leaf.to_bytes(), distributor.root, &proof),
         ErrorCode::InvalidProof
     );
 
