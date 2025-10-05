@@ -49,7 +49,7 @@ solana-rpc-client-api = "2.2.17"
 solana-security-txt = "1.1.1"
 solana-sdk = "2.2.17"
 indexmap = "2.1.0"
-spl-associated-token-account = "3.0.0"
+spl-associated-token-account = "6.0.0"
 static_assertions = "1.1"
 thiserror = "1.0.50"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "rt", "macros", "signal"] }

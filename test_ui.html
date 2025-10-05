@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jito Merkle Distributor Test UI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 300px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Jito Merkle Distributor Test UI</h1>
+        
+        <div id="connectionStatus" class="status disconnected">
+            ❌ API Not Connected
+        </div>
+
+        <div class="section">
+            <h2>🔗 API Connection Test</h2>
+            <button onclick="testConnection()">Test API Connection</button>
+            <div id="connectionResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 API Endpoints</h2>
+            <button onclick="testRoot()">Test Root Endpoint</button>
+            <button onclick="testVersion()">Get Version</button>
+            <button onclick="testUsers()">Get Users</button>
+            <button onclick="testDistributor()">Get Distributor Info</button>
+            <div id="apiResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>👤 User Status Check</h2>
+            <input type="text" id="userPubkey" placeholder="Enter user public key" value="11111111111111111111111111111112">
+            <button onclick="checkUserStatus()">Check User Status</button>
+            <button onclick="getUserProof()">Get User Proof</button>
+            <div id="userResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📋 System Information</h2>
+            <div id="systemInfo" class="result">
+                <strong>Program ID:</strong> G9n7UVLKeGBx9kXJnutZdd8V92tHm2ssoLrzyX89btoD<br>
+                <strong>Mint:</strong> jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL<br>
+                <strong>Network:</strong> Devnet<br>
+                <strong>API URL:</strong> http://localhost:7001<br>
+                <strong>Status:</strong> <span id="systemStatus">Testing...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:7001';
+        
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.innerHTML = '✅ API Connected';
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.innerHTML = '❌ API Not Connected';
+            }
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                if (response.ok) {
+                    const data = await response.text();
+                    showResult('connectionResult', `✅ Connected!\nResponse: ${data}`);
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                showResult('connectionResult', `❌ Connection failed: ${error.message}`, true);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function testRoot() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.text();
+                showResult('apiResult', `Root endpoint: ${data}`);
+            } catch (error) {
+                showResult('apiResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testVersion() {
+            try {
+                const response = await fetch(`${API_BASE}/version`);
+                const data = await response.json();
+                showResult('apiResult', `Version: ${data}`);
+            } catch (error) {
+                showResult('apiResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const data = await response.json();
+                showResult('apiResult', `Users (${data.length}):\n${data.join('\n')}`);
+            } catch (error) {
+                showResult('apiResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testDistributor() {
+            try {
+                const response = await fetch(`${API_BASE}/distributor`);
+                const data = await response.json();
+                showResult('apiResult', `Distributor Info:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                showResult('apiResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function checkUserStatus() {
+            const userPubkey = document.getElementById('userPubkey').value;
+            if (!userPubkey) {
+                showResult('userResult', 'Please enter a user public key', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/status/${userPubkey}`);
+                const data = await response.json();
+                showResult('userResult', `User Status:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                showResult('userResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function getUserProof() {
+            const userPubkey = document.getElementById('userPubkey').value;
+            if (!userPubkey) {
+                showResult('userResult', 'Please enter a user public key', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/proof/${userPubkey}`);
+                const data = await response.json();
+                showResult('userResult', `User Proof:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                showResult('userResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>
