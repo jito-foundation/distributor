@@ -11,7 +11,7 @@ use jito_merkle_tree::{
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
 };
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
-use solana_program::instruction::Instruction;
+use anchor_lang::solana_program::instruction::Instruction;
 use solana_rpc_client::rpc_client::RpcClient;
 use solana_sdk::{
     account::Account, commitment_config::CommitmentConfig,
@@ -189,7 +189,7 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
             to: claimant_ata,
             claimant,
             token_program: token::ID,
-            system_program: solana_program::system_program::ID,
+            system_program: anchor_lang::solana_program::system_program::ID,
         }
         .to_account_metas(None),
         data: merkle_distributor::instruction::NewClaim {
@@ -349,7 +349,7 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
             mint: args.mint,
             token_vault,
             distributor: distributor_pubkey,
-            system_program: solana_program::system_program::id(),
+            system_program: anchor_lang::solana_program::system_program::id(),
             associated_token_program: spl_associated_token_account::ID,
             token_program: token::ID,
             admin: keypair.pubkey(),
@@ -422,7 +422,7 @@ fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
             from,
             to: clawback_ata,
             claimant: clawback_keypair.pubkey(),
-            system_program: solana_program::system_program::ID,
+            system_program: anchor_lang::solana_program::system_program::ID,
             token_program: token::ID,
         }
         .to_account_metas(None),

@@ -10,7 +10,6 @@ indexmap = { workspace = true }
 jito-merkle-verify = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-solana-program = { workspace = true }
 solana-sdk = { workspace = true }
 thiserror = { workspace = true }
 

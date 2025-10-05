@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
-use solana_program::{hash::hashv, pubkey::Pubkey};
+use solana_sdk::{hash::hashv, pubkey::Pubkey};
 use solana_sdk::hash::Hash;
 
 use crate::csv_entry::{AirdropCategory, CsvEntry};

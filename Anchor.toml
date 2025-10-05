@@ -1,6 +1,6 @@
 [toolchain]
-anchor_version = "0.29.0"
-solana_version = "1.16.9" # Solana version to use
+anchor_version = "0.31.1"
+solana_version = "2.2.17" # Solana version to use
 
 [features]
 seeds = true
@@ -14,8 +14,8 @@ members = [
 ]
 
 [provider]
-cluster = "testnet"
-wallet = "payxNNNpXxeZMuqCPoiDxCvPRKamjq3mzdiTxHZxUhq.json"
+cluster = "devnet"
+wallet = "/Users/sebsol/00_Dev-Projects/00_Personal-Proj/00_DevWallets/MADVnaXAar2EBsKpdCn3UUc9HkCNxWZNkxqXqiGbxi9.json"
 
 [programs.mainnet]
 merkle_distributor = "m1uqAm3yAagng3uqphvQ4rRAkRy17F4JX87pFemLBKv"

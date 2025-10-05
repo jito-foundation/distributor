@@ -1,5 +1,5 @@
 use anchor_lang::{
-    context::Context, prelude::*, solana_program::hash::hashv, system_program::System, Accounts,
+    context::Context, prelude::*, system_program::System, Accounts,
     Key, Result,
 };
 use anchor_spl::{
@@ -105,14 +105,14 @@ pub fn handle_new_claim(
     let claimant_account = &ctx.accounts.claimant;
 
     // Verify the merkle proof.
-    let node = hashv(&[
+    let node = anchor_lang::solana_program::hash::hashv(&[
         &claimant_account.key().to_bytes(),
         &amount_unlocked.to_le_bytes(),
         &amount_locked.to_le_bytes(),
     ]);
 
     let distributor = &ctx.accounts.distributor;
-    let node = hashv(&[LEAF_PREFIX, &node.to_bytes()]);
+    let node = anchor_lang::solana_program::hash::hashv(&[LEAF_PREFIX, &node.to_bytes()]);
 
     require!(
         verify(proof, distributor.root, node.to_bytes()),

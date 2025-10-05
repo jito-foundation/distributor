@@ -1,4 +1,4 @@
-use solana_program::hash::hashv;
+use anchor_lang::solana_program::hash::hashv;
 
 /// modified version of https://github.com/saber-hq/merkle-distributor/blob/ac937d1901033ecb7fa3b0db22f7b39569c8e052/programs/merkle-distributor/src/merkle_proof.rs#L8
 /// This function deals with verification of Merkle trees (hash trees).

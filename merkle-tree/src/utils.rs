@@ -1,4 +1,4 @@
-use solana_program::pubkey::Pubkey;
+use solana_sdk::pubkey::Pubkey;
 
 use crate::{merkle_tree::MerkleTree, tree_node::TreeNode};
 

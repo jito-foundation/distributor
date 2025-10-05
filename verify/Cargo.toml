@@ -4,4 +4,4 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
-solana-program = { workspace = true }
+anchor-lang = { workspace = true }

@@ -22,7 +22,7 @@ use merkle_distributor::state::{
     merkle_distributor::MerkleDistributor,
 };
 use serde_derive::{Deserialize, Serialize};
-use solana_program::pubkey::Pubkey;
+use anchor_lang::solana_program::pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use tower::{
     buffer::BufferLayer, limit::RateLimitLayer, load_shed::LoadShedLayer, timeout::TimeoutLayer,

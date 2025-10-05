@@ -1,5 +1,5 @@
 // https://github.com/jito-foundation/jito-solana/blob/v1.16.19-jito/merkle-tree/src/merkle_tree.rs
-use solana_program::hash::{hashv, Hash};
+use solana_sdk::hash::{hashv, Hash};
 
 // We need to discern between leaf and intermediate nodes to prevent trivial second
 // pre-image attacks.

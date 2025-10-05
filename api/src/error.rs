@@ -8,7 +8,7 @@ use axum::{
 use jito_merkle_tree::error::MerkleTreeError;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
-use solana_program::pubkey::ParsePubkeyError;
+use anchor_lang::solana_program::pubkey::ParsePubkeyError;
 use solana_rpc_client_api::client_error::Error as RpcError;
 use thiserror::Error;
 use tracing::log::error;

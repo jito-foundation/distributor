@@ -9,6 +9,7 @@ members = [
 resolver = "2"
 
 [profile.release]
+overflow-checks = true
 lto = "fat"
 codegen-units = 1
 
@@ -27,8 +28,8 @@ edition = "2021"
 publish = false
 
 [workspace.dependencies]
-anchor-lang = "0.28.0"
-anchor-spl = "0.28.0"
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
 axum = "0.6.2"
 bytemuck = "1.14.0"
 clap = { version = "3.2.25", features = ["derive", "env"] }
@@ -42,13 +43,13 @@ serde = "1.0.137"
 serde_derive = "1.0.171"
 serde_json = "1.0.102"
 serde_yaml = "0.9.25"
-solana-program = { version = "=1.16.16" }
-solana-rpc-client = { version = "=1.16.16" }
-solana-rpc-client-api = { version = "=1.16.16" }
-solana-security-txt = { version = "1.1.1" }
-solana-sdk = { version = "=1.16.16" }
+solana-program = "2.2.17"
+solana-rpc-client = "2.2.17"
+solana-rpc-client-api = "2.2.17"
+solana-security-txt = "1.1.1"
+solana-sdk = "2.2.17"
 indexmap = "2.1.0"
-spl-associated-token-account = "2.2.0"
+spl-associated-token-account = "6.0.0"
 static_assertions = "1.1"
 thiserror = "1.0.50"
 tokio = { version = "1.29.1", features = ["rt-multi-thread", "rt", "macros", "signal"] }
